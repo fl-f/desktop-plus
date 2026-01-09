@@ -81,8 +81,9 @@ export class DiffContentsWarning extends React.Component<IDiffContentsWarningPro
         const { lineEndingsChange } = item
         return (
           <>
-            This diff contains a change in line endings from '
-            {lineEndingsChange.from}' to '{lineEndingsChange.to}'.
+            This file uses '{lineEndingsChange.from}' line endings,
+            but Git is configured to convert them to '{lineEndingsChange.to}'.
+            Your line ending changes won't be committed.
           </>
         )
     }
