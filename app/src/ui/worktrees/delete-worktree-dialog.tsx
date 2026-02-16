@@ -6,7 +6,7 @@ import { Dispatcher } from '../dispatcher'
 import { Dialog, DialogContent, DialogFooter } from '../dialog'
 import { Ref } from '../lib/ref'
 import { OkCancelButtonGroup } from '../dialog/ok-cancel-button-group'
-import { removeWorktree } from '../../lib/git/worktree'
+import { removeWorktree, getMainWorktreePath } from '../../lib/git/worktree'
 
 interface IDeleteWorktreeDialogProps {
   readonly repository: Repository
@@ -61,14 +61,42 @@ export class DeleteWorktreeDialog extends React.Component<
   private onDeleteWorktree = async () => {
     this.setState({ isDeleting: true })
 
+    const { repository, worktreePath, dispatcher } = this.props
+    const isDeletingCurrentWorktree =
+      normalizePath(repository.path) === normalizePath(worktreePath)
+
     try {
-      await removeWorktree(this.props.repository, this.props.worktreePath)
+      if (isDeletingCurrentWorktree) {
+        // When deleting the currently selected worktree, we must switch away
+        // first. Otherwise git runs from the directory being deleted and the
+        // app is left pointing at a non-existent path.
+        const mainPath = await getMainWorktreePath(repository)
+        if (mainPath === null) {
+          throw new Error('Could not find main worktree')
+        }
+
+        const addedRepos = await dispatcher.addRepositories([mainPath])
+        if (addedRepos.length === 0) {
+          throw new Error('Could not add main worktree repository')
+        }
+
+        const mainRepo = addedRepos[0]
+        await dispatcher.selectRepository(mainRepo)
+        await removeWorktree(mainRepo, worktreePath)
+        await dispatcher.removeRepository(repository, false)
+      } else {
+        await removeWorktree(repository, worktreePath)
+      }
     } catch (e) {
-      this.props.dispatcher.postError(e)
+      dispatcher.postError(e)
       this.setState({ isDeleting: false })
       return
     }
 
     this.props.onDismissed()
   }
+}
+
+function normalizePath(p: string): string {
+  return p.replace(/\/+$/, '')
 }
