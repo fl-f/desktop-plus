@@ -10,22 +10,25 @@ const localeCountryCode =
  * default to 24-hour for unlisted countries.
  */
 const twelveHourCountries = new Set([
+  'UK', // United Kingdom
+  'IE', // Ireland
   'US', // United States
   'CA', // Canada (mixed, but 12-hour common)
   'AU', // Australia
   'NZ', // New Zealand
-  'PH', // Philippines
-  'MY', // Malaysia
+  'ZA', // South Africa
   'IN', // India
   'PK', // Pakistan
   'BD', // Bangladesh
-  'EG', // Egypt
-  'SA', // Saudi Arabia
+  'PH', // Philippines
+  'MX', // Mexico
   'CO', // Colombia
 ])
 
 function prefersTwelveHourTime(): boolean {
-  return localeCountryCode !== null && twelveHourCountries.has(localeCountryCode)
+  return (
+    localeCountryCode !== null && twelveHourCountries.has(localeCountryCode)
+  )
 }
 
 /**
