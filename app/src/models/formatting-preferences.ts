@@ -164,8 +164,14 @@ export interface INumberFormat {
   readonly decimalSeparator: ',' | '.'
 }
 
-/** An unambiguous reference date for previewing date formats (Dec 25, 2025). */
-const previewDate = new Date(2025, 11, 25, 14, 30, 45)
+/**
+ * Any random date used for previewing date and time formats. This happens to be
+ * the date of the 1.0 release of GitHub Desktop but it could be any date
+ * (preferrably one where YYMMDD doesn't look the same as MMDDYY or DDMMYY to
+ * avoid confusion in the previews). Similarly, the time portion should be greater
+ * than 12:00 to make it clear when the 12-hour formats are used.
+ */
+const previewDate = new Date(2017, 9, 19, 14, 30, 45)
 
 /**
  * All available date format patterns with their preview strings.
