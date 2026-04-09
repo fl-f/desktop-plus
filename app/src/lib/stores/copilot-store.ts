@@ -319,8 +319,8 @@ export class CopilotStore {
   }
 
   /**
-   * Returns the cached model list, refreshing it from the SDK if the cache has
-   * expired or is empty.
+   * Returns the cached model list, refreshing it from the SDK if the cache
+   * has expired.
    */
   private async getCachedModels(): Promise<ReadonlyArray<ModelInfo>> {
     if (this.currentAccount === null) {
