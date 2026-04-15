@@ -2,19 +2,29 @@ import * as React from 'react'
 import { DialogContent } from '../dialog'
 import { Select } from '../lib/select'
 import type { ModelInfo } from '@github/copilot-sdk'
-import { DefaultCopilotModel } from '../../lib/stores/copilot-store'
+import {
+  DefaultCopilotModel,
+  type CopilotFeature,
+  type CopilotModelSelections,
+} from '../../lib/stores/copilot-store'
 
 interface ICopilotPreferencesProps {
-  readonly selectedCopilotModel: string | null
+  readonly selectedCopilotModels: CopilotModelSelections
   readonly copilotModels: ReadonlyArray<ModelInfo> | null
   readonly copilotAvailable: boolean
-  readonly onSelectedCopilotModelChanged: (model: string | null) => void
+  readonly onSelectedCopilotModelChanged: (
+    feature: CopilotFeature,
+    model: string | null
+  ) => void
 }
 
 export class CopilotPreferences extends React.Component<ICopilotPreferencesProps> {
-  private onModelChanged = (event: React.FormEvent<HTMLSelectElement>) => {
+  private onCommitMessageModelChanged = (
+    event: React.FormEvent<HTMLSelectElement>
+  ) => {
     const value = event.currentTarget.value
     this.props.onSelectedCopilotModelChanged(
+      'commit-message-generation',
       value === DefaultCopilotModel ? null : value
     )
   }
@@ -42,7 +52,9 @@ export class CopilotPreferences extends React.Component<ICopilotPreferencesProps
       )
     }
 
-    const { copilotModels, selectedCopilotModel } = this.props
+    const { copilotModels, selectedCopilotModels } = this.props
+    const selectedModel =
+      selectedCopilotModels['commit-message-generation'] ?? null
 
     if (copilotModels === null) {
       return <p>Loading available models…</p>
@@ -57,8 +69,8 @@ export class CopilotPreferences extends React.Component<ICopilotPreferencesProps
         label={
           __DARWIN__ ? 'Commit Message Generation' : 'Commit message generation'
         }
-        value={selectedCopilotModel ?? DefaultCopilotModel}
-        onChange={this.onModelChanged}
+        value={selectedModel ?? DefaultCopilotModel}
+        onChange={this.onCommitMessageModelChanged}
       >
         {copilotModels.map(m => (
           <option key={m.id} value={m.id}>

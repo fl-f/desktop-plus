@@ -44,6 +44,10 @@ import { Notifications } from './notifications'
 import { Accessibility } from './accessibility'
 import type { ModelInfo } from '@github/copilot-sdk'
 import { CopilotPreferences } from './copilot'
+import type {
+  CopilotFeature,
+  CopilotModelSelections,
+} from '../../lib/stores/copilot-store'
 import {
   ICustomIntegration,
   TargetPathArgument,
@@ -107,7 +111,7 @@ interface IPreferencesProps {
   readonly onEditGlobalGitConfig: () => void
   readonly underlineLinks: boolean
   readonly showDiffCheckMarks: boolean
-  readonly selectedCopilotModel: string | null
+  readonly selectedCopilotModels: CopilotModelSelections
   readonly copilotModels: ReadonlyArray<ModelInfo> | null
   readonly copilotAvailable: boolean
 }
@@ -171,7 +175,7 @@ interface IPreferencesState {
   // Whether the preferences related to Git hooks environment have been changed
   readonly hooksPreferencesDirty: boolean
 
-  readonly selectedCopilotModel: string | null
+  readonly selectedCopilotModels: CopilotModelSelections
   readonly selectedDateFormat?: DateFormat
   readonly selectedTimeFormat?: TimeFormat
   readonly selectedNumberFormat?: INumberFormat
@@ -238,7 +242,7 @@ export class Preferences extends React.Component<
       cacheGitHookEnv: getCacheHooksEnv(),
       selectedGitHookEnvShell: getGitHookEnvShell(),
       hooksPreferencesDirty: false,
-      selectedCopilotModel: this.props.selectedCopilotModel,
+      selectedCopilotModels: this.props.selectedCopilotModels,
       selectedDateFormat: getDateFormatPreference(),
       selectedTimeFormat: getTimeFormatPreference(),
       selectedNumberFormat: getNumberFormatPreference(),
@@ -509,7 +513,7 @@ export class Preferences extends React.Component<
       case PreferencesTab.Copilot:
         View = (
           <CopilotPreferences
-            selectedCopilotModel={this.state.selectedCopilotModel}
+            selectedCopilotModels={this.state.selectedCopilotModels}
             copilotModels={this.props.copilotModels}
             copilotAvailable={this.props.copilotAvailable}
             onSelectedCopilotModelChanged={this.onSelectedCopilotModelChanged}
@@ -834,9 +838,18 @@ export class Preferences extends React.Component<
   }
 
   private onSelectedCopilotModelChanged = (
-    selectedCopilotModel: string | null
+    feature: CopilotFeature,
+    model: string | null
   ) => {
-    this.setState({ selectedCopilotModel })
+    this.setState(state => {
+      const selections = { ...state.selectedCopilotModels }
+      if (model === null) {
+        delete selections[feature]
+      } else {
+        selections[feature] = model
+      }
+      return { selectedCopilotModels: selections }
+    })
   }
 
   private onSelectedTabSizeChanged = (tabSize: number) => {
@@ -1003,7 +1016,7 @@ export class Preferences extends React.Component<
 
     dispatcher.setDiffCheckMarksSetting(this.state.showDiffCheckMarks)
 
-    dispatcher.setSelectedCopilotModel(this.state.selectedCopilotModel)
+    dispatcher.setSelectedCopilotModels(this.state.selectedCopilotModels)
 
     if (enableFormattingPreferences()) {
       if (this.state.selectedDateFormat !== undefined) {

@@ -12,6 +12,7 @@ import {
   SignInStore,
   UpstreamRemoteName,
 } from '.'
+import type { CopilotFeature, CopilotModelSelections } from './copilot-store'
 import { Account, isDotComAccount } from '../../models/account'
 import { AppMenu, IMenu } from '../../models/app-menu'
 import { Author } from '../../models/author'
@@ -479,7 +480,7 @@ const commitMessageGenerationButtonClickedKey =
 
 export const showChangesFilterKey = 'show-changes-filter'
 
-const selectedCopilotModelKey = 'selected-copilot-model'
+const selectedCopilotModelsKey = 'selected-copilot-models'
 export const showChangesFilterDefault = true
 
 export class AppStore extends TypedBaseStore<IAppState> {
@@ -641,7 +642,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
 
   private showChangesFilter: boolean = false
 
-  private selectedCopilotModel: string | null = null
+  private selectedCopilotModels: CopilotModelSelections = {}
   private copilotModels: ReadonlyArray<ModelInfo> | null = null
 
   public constructor(
@@ -1154,7 +1155,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
       commitMessageGenerationButtonClicked:
         this.commitMessageGenerationButtonClicked,
       showChangesFilter: this.showChangesFilter,
-      selectedCopilotModel: this.selectedCopilotModel,
+      selectedCopilotModels: this.selectedCopilotModels,
       copilotModels: this.copilotModels,
       copilotAvailable: this.copilotStore.isAvailable,
     }
@@ -2419,8 +2420,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
       showChangesFilterDefault
     )
 
-    this.selectedCopilotModel =
-      localStorage.getItem(selectedCopilotModelKey) ?? null
+    this.selectedCopilotModels = this.loadCopilotModelSelections()
 
     this.emitUpdateNow()
 
@@ -5696,7 +5696,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
           ? await this.copilotStore.generateCommitMessage(
               diff,
               repository.path,
-              this.selectedCopilotModel
+              this.selectedCopilotModels['commit-message-generation'] ?? null
             )
           : await API.fromAccount(account).getDiffChangesCommitMessage(diff)
 
@@ -8595,15 +8595,68 @@ export class AppStore extends TypedBaseStore<IAppState> {
   }
 
   /** This shouldn't be called directly. See 'Dispatcher'. */
-  public _setSelectedCopilotModel(model: string | null) {
-    if (model !== this.selectedCopilotModel) {
-      this.selectedCopilotModel = model
+  public _setSelectedCopilotModel(
+    feature: CopilotFeature,
+    model: string | null
+  ) {
+    const current = this.selectedCopilotModels[feature] ?? null
+    if (model !== current) {
       if (model === null) {
-        localStorage.removeItem(selectedCopilotModelKey)
+        const { [feature]: _, ...rest } = this.selectedCopilotModels
+        this.selectedCopilotModels = rest
       } else {
-        localStorage.setItem(selectedCopilotModelKey, model)
+        this.selectedCopilotModels = {
+          ...this.selectedCopilotModels,
+          [feature]: model,
+        }
+      }
+      this.saveCopilotModelSelections()
+    }
+  }
+
+  private loadCopilotModelSelections(): CopilotModelSelections {
+    const raw = localStorage.getItem(selectedCopilotModelsKey)
+    if (raw !== null) {
+      try {
+        const parsed: unknown = JSON.parse(raw)
+        if (typeof parsed === 'object' && parsed !== null) {
+          return parsed as CopilotModelSelections
+        }
+      } catch {
+        // fall through to migration
       }
     }
+
+    // Migrate from the old single-model key
+    const legacy = localStorage.getItem('selected-copilot-model')
+    if (legacy !== null) {
+      localStorage.removeItem('selected-copilot-model')
+      const selections: CopilotModelSelections = {
+        'commit-message-generation': legacy,
+      }
+      localStorage.setItem(selectedCopilotModelsKey, JSON.stringify(selections))
+      return selections
+    }
+
+    return {}
+  }
+
+  private saveCopilotModelSelections() {
+    const keys = Object.keys(this.selectedCopilotModels)
+    if (keys.length === 0) {
+      localStorage.removeItem(selectedCopilotModelsKey)
+    } else {
+      localStorage.setItem(
+        selectedCopilotModelsKey,
+        JSON.stringify(this.selectedCopilotModels)
+      )
+    }
+  }
+
+  /** This shouldn't be called directly. See 'Dispatcher'. */
+  public _setSelectedCopilotModels(models: CopilotModelSelections) {
+    this.selectedCopilotModels = { ...models }
+    this.saveCopilotModelSelections()
   }
 
   /** This shouldn't be called directly. See 'Dispatcher'. */

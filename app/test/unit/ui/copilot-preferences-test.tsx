@@ -3,7 +3,10 @@ import { describe, it } from 'node:test'
 import * as React from 'react'
 import { render, screen, fireEvent } from '../../helpers/ui/render'
 import { CopilotPreferences } from '../../../src/ui/preferences/copilot'
-import { DefaultCopilotModel } from '../../../src/lib/stores/copilot-store'
+import {
+  DefaultCopilotModel,
+  type CopilotFeature,
+} from '../../../src/lib/stores/copilot-store'
 import type { ModelInfo } from '@github/copilot-sdk'
 
 function makeModel(
@@ -36,7 +39,7 @@ describe('CopilotPreferences', () => {
   it('shows sign-in message when copilot is not available', () => {
     render(
       <CopilotPreferences
-        selectedCopilotModel={null}
+        selectedCopilotModels={{}}
         copilotModels={null}
         copilotAvailable={false}
         onSelectedCopilotModelChanged={() => {}}
@@ -58,7 +61,7 @@ describe('CopilotPreferences', () => {
   it('shows loading message when copilot is available but models not yet fetched', () => {
     render(
       <CopilotPreferences
-        selectedCopilotModel={null}
+        selectedCopilotModels={{}}
         copilotModels={null}
         copilotAvailable={true}
         onSelectedCopilotModelChanged={() => {}}
@@ -76,7 +79,7 @@ describe('CopilotPreferences', () => {
   it('shows no-models message when fetch completed with empty result', () => {
     render(
       <CopilotPreferences
-        selectedCopilotModel={null}
+        selectedCopilotModels={{}}
         copilotModels={[]}
         copilotAvailable={true}
         onSelectedCopilotModelChanged={() => {}}
@@ -96,7 +99,7 @@ describe('CopilotPreferences', () => {
   it('renders the model picker when models are available', () => {
     const view = render(
       <CopilotPreferences
-        selectedCopilotModel={null}
+        selectedCopilotModels={{}}
         copilotModels={models}
         copilotAvailable={true}
         onSelectedCopilotModelChanged={() => {}}
@@ -112,10 +115,10 @@ describe('CopilotPreferences', () => {
     assert.strictEqual(options[1].textContent, 'Claude Sonnet')
   })
 
-  it('selects the default model when selectedCopilotModel is null', () => {
+  it('selects the default model when no model is selected for commit-message-generation', () => {
     const view = render(
       <CopilotPreferences
-        selectedCopilotModel={null}
+        selectedCopilotModels={{}}
         copilotModels={models}
         copilotAvailable={true}
         onSelectedCopilotModelChanged={() => {}}
@@ -126,10 +129,10 @@ describe('CopilotPreferences', () => {
     assert.strictEqual(select.value, DefaultCopilotModel)
   })
 
-  it('selects the specified model when selectedCopilotModel is set', () => {
+  it('selects the specified model when commit-message-generation model is set', () => {
     const view = render(
       <CopilotPreferences
-        selectedCopilotModel="claude-sonnet"
+        selectedCopilotModels={{ 'commit-message-generation': 'claude-sonnet' }}
         copilotModels={models}
         copilotAvailable={true}
         onSelectedCopilotModelChanged={() => {}}
@@ -140,33 +143,39 @@ describe('CopilotPreferences', () => {
     assert.strictEqual(select.value, 'claude-sonnet')
   })
 
-  it('calls onSelectedCopilotModelChanged with model id on change', () => {
-    const changed: Array<string | null> = []
+  it('calls onSelectedCopilotModelChanged with feature and model id on change', () => {
+    const changed: Array<{ feature: CopilotFeature; model: string | null }> = []
 
     const view = render(
       <CopilotPreferences
-        selectedCopilotModel={null}
+        selectedCopilotModels={{}}
         copilotModels={models}
         copilotAvailable={true}
-        onSelectedCopilotModelChanged={m => changed.push(m)}
+        onSelectedCopilotModelChanged={(f, m) =>
+          changed.push({ feature: f, model: m })
+        }
       />
     )
 
     const select = view.container.querySelector('select') as HTMLSelectElement
     fireEvent.change(select, { target: { value: 'claude-sonnet' } })
 
-    assert.deepStrictEqual(changed, ['claude-sonnet'])
+    assert.deepStrictEqual(changed, [
+      { feature: 'commit-message-generation', model: 'claude-sonnet' },
+    ])
   })
 
   it('calls onSelectedCopilotModelChanged with null when default is re-selected', () => {
-    const changed: Array<string | null> = []
+    const changed: Array<{ feature: CopilotFeature; model: string | null }> = []
 
     const view = render(
       <CopilotPreferences
-        selectedCopilotModel="claude-sonnet"
+        selectedCopilotModels={{ 'commit-message-generation': 'claude-sonnet' }}
         copilotModels={models}
         copilotAvailable={true}
-        onSelectedCopilotModelChanged={m => changed.push(m)}
+        onSelectedCopilotModelChanged={(f, m) =>
+          changed.push({ feature: f, model: m })
+        }
       />
     )
 
@@ -175,7 +184,7 @@ describe('CopilotPreferences', () => {
 
     assert.deepStrictEqual(
       changed,
-      [null],
+      [{ feature: 'commit-message-generation', model: null }],
       'Selecting default model should emit null'
     )
   })
@@ -183,7 +192,7 @@ describe('CopilotPreferences', () => {
   it('renders the heading text', () => {
     render(
       <CopilotPreferences
-        selectedCopilotModel={null}
+        selectedCopilotModels={{}}
         copilotModels={models}
         copilotAvailable={true}
         onSelectedCopilotModelChanged={() => {}}
@@ -201,7 +210,7 @@ describe('CopilotPreferences', () => {
 
     const view = render(
       <CopilotPreferences
-        selectedCopilotModel={null}
+        selectedCopilotModels={{}}
         copilotModels={noDefaultModels}
         copilotAvailable={true}
         onSelectedCopilotModelChanged={() => {}}
@@ -209,7 +218,7 @@ describe('CopilotPreferences', () => {
     )
 
     const select = view.container.querySelector('select') as HTMLSelectElement
-    // With selectedCopilotModel=null the value falls back to DefaultCopilotModel,
+    // With no model selected the value falls back to DefaultCopilotModel,
     // which isn't in the list — the browser selects the first option.
     assert.strictEqual(select.value, 'model-a')
 
@@ -226,7 +235,9 @@ describe('CopilotPreferences', () => {
   it('falls back to first option when persisted model is not in the list', () => {
     const view = render(
       <CopilotPreferences
-        selectedCopilotModel="deleted-model"
+        selectedCopilotModels={{
+          'commit-message-generation': 'deleted-model',
+        }}
         copilotModels={models}
         copilotAvailable={true}
         onSelectedCopilotModelChanged={() => {}}

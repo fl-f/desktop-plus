@@ -50,6 +50,10 @@ import {
 import { Shell } from '../../lib/shells'
 import { ILaunchStats, StatsStore } from '../../lib/stats'
 import { AppStore } from '../../lib/stores/app-store'
+import type {
+  CopilotFeature,
+  CopilotModelSelections,
+} from '../../lib/stores/copilot-store'
 import { RepositoryStateCache } from '../../lib/stores/repository-state-cache'
 import { getTipSha } from '../../lib/tip'
 
@@ -4084,9 +4088,17 @@ export class Dispatcher {
     this.appStore._toggleChangesFilterVisibility()
   }
 
-  /** Set the selected Copilot model for commit message generation. */
-  public setSelectedCopilotModel(model: string | null) {
-    return this.appStore._setSelectedCopilotModel(model)
+  /** Set the selected Copilot model for a specific feature. */
+  public setSelectedCopilotModel(
+    feature: CopilotFeature,
+    model: string | null
+  ) {
+    return this.appStore._setSelectedCopilotModel(feature, model)
+  }
+
+  /** Replace all per-feature Copilot model selections at once. */
+  public setSelectedCopilotModels(models: CopilotModelSelections) {
+    return this.appStore._setSelectedCopilotModels(models)
   }
 
   /** Fetch the list of available Copilot models from the SDK. */

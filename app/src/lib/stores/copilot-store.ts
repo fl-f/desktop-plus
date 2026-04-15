@@ -15,6 +15,15 @@ import { BaseStore } from './base-store'
 export const DefaultCopilotModel = 'gpt-5-mini'
 const DefaultReasoningEffort: ReasoningEffort = 'low'
 
+/** Copilot features that support per-model selection. */
+export type CopilotFeature = 'commit-message-generation'
+
+/**
+ * Per-feature model selections. An absent key means the default model
+ * will be used for that feature.
+ */
+export type CopilotModelSelections = Partial<Record<CopilotFeature, string>>
+
 /**
  * How long to cache the model list before re-fetching from the SDK.
  * Matches the MaxFetchFrequency pattern used by other stores (e.g. GitHubUserStore).

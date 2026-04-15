@@ -1599,7 +1599,7 @@ export class App extends React.Component<IAppProps, IAppState> {
             onEditGlobalGitConfig={this.editGlobalGitConfig}
             underlineLinks={this.state.underlineLinks}
             showDiffCheckMarks={this.state.showDiffCheckMarks}
-            selectedCopilotModel={this.state.selectedCopilotModel}
+            selectedCopilotModels={this.state.selectedCopilotModels}
             copilotModels={this.state.copilotModels}
             copilotAvailable={this.state.copilotAvailable}
           />

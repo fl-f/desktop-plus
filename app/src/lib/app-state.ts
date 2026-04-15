@@ -1,4 +1,5 @@
 import type { ModelInfo } from '@github/copilot-sdk'
+import type { CopilotModelSelections } from './stores/copilot-store'
 import { Account } from '../models/account'
 import { CommitIdentity } from '../models/commit-identity'
 import { IDiff, ImageDiffType } from '../models/diff'
@@ -394,10 +395,10 @@ export interface IAppState {
   readonly showChangesFilter: boolean
 
   /**
-   * The selected Copilot model ID for commit message generation.
-   * Null means the SDK default model will be used.
+   * Per-feature Copilot model selections. An absent key means the default
+   * model will be used for that feature.
    */
-  readonly selectedCopilotModel: string | null
+  readonly selectedCopilotModels: CopilotModelSelections
 
   /**
    * The list of available Copilot models fetched from the SDK.
