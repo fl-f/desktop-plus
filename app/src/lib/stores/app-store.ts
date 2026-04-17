@@ -5281,10 +5281,9 @@ export class AppStore extends TypedBaseStore<IAppState> {
       // we need to switch to a different branch (default or recent).
       const branchToCheckout =
         toCheckout ?? this.getBranchToCheckoutAfterDelete(branch, repository)
-      const deletingMainBranch =
-        branchToCheckout === null || branchToCheckout.ref === branch.ref
-
-      if (deletingMainBranch) {
+      if (branchToCheckout === null) {
+        // No checkout needed
+      } else if (branchToCheckout.ref === branch.ref) {
         this._showPopup({
           type: PopupType.CantDeleteMainBranch,
           repository,
