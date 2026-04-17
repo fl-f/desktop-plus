@@ -9,9 +9,9 @@ import { Row } from '../lib/row'
 import { DialogContent } from '../dialog'
 import { RadioGroup } from '../lib/radio-group'
 import { Select } from '../lib/select'
+import { Checkbox, CheckboxValue } from '../lib/checkbox'
 import { encodePathAsUrl } from '../../lib/path'
 import { tabSizeDefault } from '../../lib/stores/app-store'
-import { Checkbox, CheckboxValue } from '../lib/checkbox'
 import { ShowBranchNameInRepoListSetting } from '../../models/show-branch-name-in-repo-list'
 import { parseEnumValue } from '../../lib/enum'
 import { assertNever } from '../../lib/fatal-error'
@@ -24,6 +24,17 @@ import {
   getAvailableDiffFontFamilies,
   getDiffFontFamilyLabel,
 } from '../../models/diff-font'
+import { enableFormattingPreferences } from '../../lib/feature-flag'
+import {
+  DateFormat,
+  TimeFormat,
+  INumberFormat,
+  dateFormats,
+  timeFormats,
+  numberFormats,
+  numberFormatToKey,
+} from '../../models/formatting-preferences'
+import { formatNumber } from '../../lib/format-number'
 
 interface IAppearanceProps {
   readonly selectedTheme: ApplicationTheme
@@ -52,6 +63,14 @@ interface IAppearanceProps {
   ) => void
   readonly branchSortOrder: BranchSortOrder
   readonly onBranchSortOrderChanged: (sortOrder: BranchSortOrder) => void
+  readonly selectedDateFormat: DateFormat
+  readonly onSelectedDateFormatChanged: (format: DateFormat) => void
+  readonly selectedTimeFormat: TimeFormat
+  readonly onSelectedTimeFormatChanged: (format: TimeFormat) => void
+  readonly selectedNumberFormat: INumberFormat
+  readonly onSelectedNumberFormatChanged: (format: INumberFormat) => void
+  readonly preferAbsoluteDates: boolean
+  readonly onPreferAbsoluteDatesChanged: (value: boolean) => void
 }
 
 interface IAppearanceState {
@@ -240,6 +259,39 @@ export class Appearance extends React.Component<
     this.props.onTitleBarStyleChanged(titleBarStyle)
   }
 
+  private onDateFormatChanged = (event: React.FormEvent<HTMLSelectElement>) => {
+    const value = event.currentTarget.value
+    const match = dateFormats.find(f => f.pattern === value)
+    if (match !== undefined) {
+      this.props.onSelectedDateFormatChanged(match.pattern)
+    }
+  }
+
+  private onTimeFormatChanged = (event: React.FormEvent<HTMLSelectElement>) => {
+    const value = event.currentTarget.value
+    const match = timeFormats.find(f => f.pattern === value)
+    if (match !== undefined) {
+      this.props.onSelectedTimeFormatChanged(match.pattern)
+    }
+  }
+
+  private onNumberFormatChanged = (
+    event: React.FormEvent<HTMLSelectElement>
+  ) => {
+    const match = numberFormats.find(
+      n => numberFormatToKey(n) === event.currentTarget.value
+    )
+    if (match) {
+      this.props.onSelectedNumberFormatChanged(match)
+    }
+  }
+
+  private onPreferAbsoluteDatesChanged = (
+    event: React.FormEvent<HTMLInputElement>
+  ) => {
+    this.props.onPreferAbsoluteDatesChanged(event.currentTarget.checked)
+  }
+
   public renderThemeSwatch = (theme: ApplicationTheme) => {
     const darkThemeImage = encodePathAsUrl(__dirname, 'static/ghd_dark.svg')
     const lightThemeImage = encodePathAsUrl(__dirname, 'static/ghd_light.svg')
@@ -316,16 +368,15 @@ export class Appearance extends React.Component<
     return (
       <div className="advanced-section">
         <h2 id="theme-heading">Theme</h2>
-        <Row>
-          <RadioGroup<ApplicationTheme>
-            ariaLabelledBy="theme-heading"
-            className="theme-selector"
-            selectedKey={selectedTheme}
-            radioButtonKeys={themes}
-            onSelectionChanged={this.onSelectedThemeChanged}
-            renderRadioButtonLabelContents={this.renderThemeSwatch}
-          />
-        </Row>
+
+        <RadioGroup<ApplicationTheme>
+          ariaLabelledBy="theme-heading"
+          className="theme-selector"
+          selectedKey={selectedTheme}
+          radioButtonKeys={themes}
+          onSelectionChanged={this.onSelectedThemeChanged}
+          renderRadioButtonLabelContents={this.renderThemeSwatch}
+        />
       </div>
     )
   }
@@ -448,12 +499,76 @@ export class Appearance extends React.Component<
     )
   }
 
+  private renderFormatting() {
+    if (!enableFormattingPreferences()) {
+      return null
+    }
+
+    return (
+      <div className="appearance-section formatting-section">
+        <h2 id="formatting-heading">Formatting</h2>
+
+        <Row>
+          <Select
+            label={__DARWIN__ ? 'Date Format' : 'Date format'}
+            value={this.props.selectedDateFormat}
+            onChange={this.onDateFormatChanged}
+          >
+            {dateFormats.map(({ pattern, example }) => (
+              <option key={pattern} value={pattern}>
+                {example} ({pattern})
+              </option>
+            ))}
+          </Select>
+
+          <Select
+            label={__DARWIN__ ? 'Time Format' : 'Time format'}
+            value={this.props.selectedTimeFormat}
+            onChange={this.onTimeFormatChanged}
+          >
+            {timeFormats.map(({ pattern, example }) => (
+              <option key={pattern} value={pattern}>
+                {example} ({pattern})
+              </option>
+            ))}
+          </Select>
+        </Row>
+
+        <Select
+          label={__DARWIN__ ? 'Number Format' : 'Number format'}
+          value={numberFormatToKey(this.props.selectedNumberFormat)}
+          onChange={this.onNumberFormatChanged}
+        >
+          {numberFormats.map(format => (
+            <option
+              key={numberFormatToKey(format)}
+              value={numberFormatToKey(format)}
+            >
+              {formatNumber(1234567.89, format)}
+            </option>
+          ))}
+        </Select>
+
+        <Checkbox
+          className="prefer-absolute-dates"
+          label="Prefer absolute dates over relative"
+          value={
+            this.props.preferAbsoluteDates
+              ? CheckboxValue.On
+              : CheckboxValue.Off
+          }
+          onChange={this.onPreferAbsoluteDatesChanged}
+        />
+      </div>
+    )
+  }
+
   private renderDiffSettings() {
     const availableTabSizes: number[] = [1, 2, 3, 4, 5, 6, 8, 10, 12]
 
     return (
       <div className="advanced-section">
-        <h2 id="diff-heading">{'Diff'}</h2>
+        <h2 id="diff-heading">Diff</h2>
 
         <Select
           value={this.state.selectedDiffFontSize.toString()}
@@ -498,6 +613,7 @@ export class Appearance extends React.Component<
     return (
       <DialogContent className="appearance-tab">
         {this.renderSelectedTheme()}
+        {this.renderFormatting()}
         {this.renderRepositoryList()}
         {this.renderBranchSortOrder()}
         {this.renderWorktreeVisibility()}

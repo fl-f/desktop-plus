@@ -51,6 +51,12 @@ import {
   CopyPathNormalization,
   defaultCopyPathNormalization,
 } from '../../models/copy-path-normalization'
+import type { ModelInfo } from '@github/copilot-sdk'
+import { CopilotPreferences } from './copilot'
+import type {
+  CopilotFeature,
+  CopilotModelSelections,
+} from '../../lib/stores/copilot-store'
 import {
   ICustomIntegration,
   TargetPathArgument,
@@ -66,6 +72,20 @@ import {
   setGitHookEnvShell,
   setHooksEnvEnabled,
 } from '../../lib/hooks/config'
+import { enableCopilotSdkCommitMessageGeneration } from '../../lib/feature-flag'
+import {
+  DateFormat,
+  TimeFormat,
+  INumberFormat,
+  getPreferAbsoluteDates,
+  getDateFormatPreference,
+  getTimeFormatPreference,
+  getNumberFormatPreference,
+  setDateFormatPreference,
+  setTimeFormatPreference,
+  setNumberFormatPreference,
+} from '../../models/formatting-preferences'
+import { enableFormattingPreferences } from '../../lib/feature-flag'
 
 interface IPreferencesProps {
   readonly dispatcher: Dispatcher
@@ -113,6 +133,9 @@ interface IPreferencesProps {
   readonly underlineLinks: boolean
   readonly showDiffCheckMarks: boolean
   readonly copyPathNormalization: CopyPathNormalization
+  readonly selectedCopilotModels: CopilotModelSelections
+  readonly copilotModels: ReadonlyArray<ModelInfo> | null
+  readonly copilotAvailable: boolean
 }
 
 interface IPreferencesState {
@@ -186,6 +209,12 @@ interface IPreferencesState {
   // Whether the preferences related to Git hooks environment have been changed
   readonly hooksPreferencesDirty: boolean
   readonly copyPathNormalization: CopyPathNormalization
+
+  readonly selectedCopilotModels: CopilotModelSelections
+  readonly selectedDateFormat?: DateFormat
+  readonly selectedTimeFormat?: TimeFormat
+  readonly selectedNumberFormat?: INumberFormat
+  readonly preferAbsoluteDates?: boolean
 }
 
 /**
@@ -264,6 +293,11 @@ export class Preferences extends React.Component<
       hooksPreferencesDirty: false,
       copyPathNormalization:
         this.props.copyPathNormalization ?? defaultCopyPathNormalization,
+      selectedCopilotModels: this.props.selectedCopilotModels,
+      selectedDateFormat: getDateFormatPreference(),
+      selectedTimeFormat: getTimeFormatPreference(),
+      selectedNumberFormat: getNumberFormatPreference(),
+      preferAbsoluteDates: getPreferAbsoluteDates(),
     }
   }
 
@@ -297,6 +331,11 @@ export class Preferences extends React.Component<
       getAvailableEditors(),
       getAvailableShells(),
     ])
+
+    // Kick off Copilot model list fetch (non-blocking)
+    if (this.isCopilotSdkEnabled) {
+      this.props.dispatcher.fetchCopilotModels()
+    }
 
     const availableEditors = editors.map(e => e.editor) ?? null
     const availableShells = shells.map(e => e.shell) ?? null
@@ -378,7 +417,7 @@ export class Preferences extends React.Component<
           {this.renderDisallowedCharactersError()}
           <TabBar
             onTabClicked={this.onTabClicked}
-            selectedIndex={this.state.selectedIndex}
+            selectedIndex={this.tabToVisualIndex(this.state.selectedIndex)}
             type={TabBarType.Vertical}
           >
             <span id={this.getTabId(PreferencesTab.Accounts)}>
@@ -389,6 +428,12 @@ export class Preferences extends React.Component<
               <Octicon className="icon" symbol={octicons.person} />
               Integrations
             </span>
+            {this.isCopilotSdkEnabled && (
+              <span id={this.getTabId(PreferencesTab.Copilot)}>
+                <Octicon className="icon" symbol={octicons.copilot} />
+                Copilot
+              </span>
+            )}
             <span id={this.getTabId(PreferencesTab.Git)}>
               <Octicon className="icon" symbol={octicons.gitCommit} />
               Git
@@ -430,6 +475,9 @@ export class Preferences extends React.Component<
         break
       case PreferencesTab.Integrations:
         suffix = 'integrations'
+        break
+      case PreferencesTab.Copilot:
+        suffix = 'copilot'
         break
       case PreferencesTab.Git:
         suffix = 'git'
@@ -549,6 +597,16 @@ export class Preferences extends React.Component<
         )
         break
       }
+      case PreferencesTab.Copilot:
+        View = (
+          <CopilotPreferences
+            selectedCopilotModels={this.state.selectedCopilotModels}
+            copilotModels={this.props.copilotModels}
+            copilotAvailable={this.props.copilotAvailable}
+            onSelectedCopilotModelChanged={this.onSelectedCopilotModelChanged}
+          />
+        )
+        break
       case PreferencesTab.Git: {
         const { existingLockFilePath } = this.state
         const error =
@@ -633,6 +691,22 @@ export class Preferences extends React.Component<
             }
             branchSortOrder={this.state.branchSortOrder}
             onBranchSortOrderChanged={this.onBranchSortOrderChanged}
+            selectedDateFormat={
+              this.state.selectedDateFormat ?? getDateFormatPreference()
+            }
+            onSelectedDateFormatChanged={this.onSelectedDateFormatChanged}
+            selectedTimeFormat={
+              this.state.selectedTimeFormat ?? getTimeFormatPreference()
+            }
+            onSelectedTimeFormatChanged={this.onSelectedTimeFormatChanged}
+            selectedNumberFormat={
+              this.state.selectedNumberFormat ?? getNumberFormatPreference()
+            }
+            onSelectedNumberFormatChanged={this.onSelectedNumberFormatChanged}
+            preferAbsoluteDates={
+              this.state.preferAbsoluteDates ?? getPreferAbsoluteDates()
+            }
+            onPreferAbsoluteDatesChanged={this.onPreferAbsoluteDatesChanged}
           />
         )
         break
@@ -852,6 +926,30 @@ export class Preferences extends React.Component<
     this.setState({ selectedShell: shell })
   }
 
+  private onSelectedDateFormatChanged = (selectedDateFormat: DateFormat) => {
+    this.setState({ selectedDateFormat })
+  }
+
+  private onSelectedTimeFormatChanged = (selectedTimeFormat: TimeFormat) => {
+    this.setState({ selectedTimeFormat })
+  }
+
+  private onSelectedNumberFormatChanged = (
+    selectedNumberFormat: INumberFormat
+  ) => {
+    this.setState({ selectedNumberFormat })
+  }
+
+  private onPreferAbsoluteDatesChanged = (preferAbsoluteDates: boolean) => {
+    this.setState({ preferAbsoluteDates })
+  }
+
+  private onCopyPathNormalizationChanged = (
+    copyPathNormalization: CopyPathNormalization
+  ) => {
+    this.setState({ copyPathNormalization })
+  }
+
   private onUseCustomEditorChanged = (useCustomEditor: boolean) => {
     this.setState({ useCustomEditor })
   }
@@ -896,10 +994,19 @@ export class Preferences extends React.Component<
     this.setState({ branchSortOrder })
   }
 
-  private onCommitDateDisplayChanged = (
-    commitDateDisplay: CommitDateDisplay
+  private onSelectedCopilotModelChanged = (
+    feature: CopilotFeature,
+    model: string | null
   ) => {
-    this.setState({ commitDateDisplay })
+    this.setState(state => {
+      const selections = { ...state.selectedCopilotModels }
+      if (model === null) {
+        delete selections[feature]
+      } else {
+        selections[feature] = model
+      }
+      return { selectedCopilotModels: selections }
+    })
   }
 
   private onSelectedTabSizeChanged = (tabSize: number) => {
@@ -1155,12 +1262,51 @@ export class Preferences extends React.Component<
 
     dispatcher.setShowBranchNameInRepoList(this.state.showBranchNameInRepoList)
     dispatcher.setBranchSortOrder(this.state.branchSortOrder)
-    dispatcher.setCommitDateDisplay(this.state.commitDateDisplay)
+
+    dispatcher.setSelectedCopilotModels(this.state.selectedCopilotModels)
+
+    if (enableFormattingPreferences()) {
+      if (this.state.selectedDateFormat !== undefined) {
+        setDateFormatPreference(this.state.selectedDateFormat)
+      }
+
+      if (this.state.selectedTimeFormat !== undefined) {
+        setTimeFormatPreference(this.state.selectedTimeFormat)
+      }
+
+      if (this.state.selectedNumberFormat !== undefined) {
+        setNumberFormatPreference(this.state.selectedNumberFormat)
+      }
+
+      if (this.state.preferAbsoluteDates !== undefined) {
+        dispatcher.setPreferAbsoluteDates(this.state.preferAbsoluteDates)
+      }
+    }
 
     this.props.onDismissed()
   }
 
-  private onTabClicked = (index: number) => {
-    this.setState({ selectedIndex: index })
+  private onTabClicked = (visualIndex: number) => {
+    this.setState({ selectedIndex: this.visualIndexToTab(visualIndex) })
+  }
+
+  private get isCopilotSdkEnabled(): boolean {
+    return this.props.accounts
+      .filter(isDotComAccount)
+      .some(enableCopilotSdkCommitMessageGeneration)
+  }
+
+  private tabToVisualIndex(tab: PreferencesTab): number {
+    if (!this.isCopilotSdkEnabled && tab > PreferencesTab.Copilot) {
+      return tab - 1
+    }
+    return tab
+  }
+
+  private visualIndexToTab(index: number): PreferencesTab {
+    if (!this.isCopilotSdkEnabled && index >= PreferencesTab.Copilot) {
+      return index + 1
+    }
+    return index
   }
 }

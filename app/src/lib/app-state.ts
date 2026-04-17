@@ -1,3 +1,5 @@
+import type { ModelInfo } from '@github/copilot-sdk'
+import type { CopilotModelSelections } from './stores/copilot-store'
 import { Account } from '../models/account'
 import { CommitIdentity } from '../models/commit-identity'
 import { IConfigValueOrigin } from './git/config'
@@ -422,6 +424,9 @@ export interface IAppState {
   /** Controls the sort order for branch lists in branch-selection views */
   readonly branchSortOrder: BranchSortOrder
 
+  /** Whether the user prefers absolute dates over relative time in lists */
+  readonly preferAbsoluteDates: boolean
+
   /**
    * Cached repo rulesets. Used to prevent repeatedly querying the same
    * rulesets to check their bypass status.
@@ -438,6 +443,21 @@ export interface IAppState {
 
   /** Whether the changes filter is shown */
   readonly showChangesFilter: boolean
+
+  /**
+   * Per-feature Copilot model selections. An absent key means the default
+   * model will be used for that feature.
+   */
+  readonly selectedCopilotModels: CopilotModelSelections
+
+  /**
+   * The list of available Copilot models fetched from the SDK.
+   * Null when the list has not been fetched yet.
+   */
+  readonly copilotModels: ReadonlyArray<ModelInfo> | null
+
+  /** Whether Copilot is available (i.e. a GitHub.com account is signed in). */
+  readonly copilotAvailable: boolean
 }
 
 export enum FoldoutType {

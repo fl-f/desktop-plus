@@ -200,6 +200,8 @@ interface ICommitListProps {
    */
   readonly dragSourceBranch?: Branch
 
+  readonly preferAbsoluteDates: boolean
+
   /** This will make the list semantics friendly to screen reader users in browse mode. */
   readonly isInformationalView?: boolean
 }
@@ -329,6 +331,7 @@ export class CommitList extends React.Component<
         disableSquashing={this.props.disableSquashing}
         accounts={this.props.accounts}
         dragSourceBranch={this.props.dragSourceBranch}
+        preferAbsoluteDates={this.props.preferAbsoluteDates}
       />
     )
   }
@@ -656,6 +659,7 @@ export class CommitList extends React.Component<
             commitLookupHash: this.commitsHash(this.getVisibleCommits()),
             tagsToPush: this.props.tagsToPush,
             shasToHighlight: this.props.shasToHighlight,
+            preferAbsoluteDates: this.props.preferAbsoluteDates,
           }}
           setScrollTop={this.props.compareListScrollTop}
           rowCustomClassNameMap={this.getRowCustomClassMap()}
