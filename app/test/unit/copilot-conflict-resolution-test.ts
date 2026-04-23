@@ -1,11 +1,11 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert'
 
-import { parseCopilotConflictResolution } from '../../src/lib/copilot-conflict-resolution'
 import {
+  parseCopilotConflictResolution,
   extractSymbols,
   createDependencyAwareChunks,
-} from '../../src/lib/stores/copilot-store'
+} from '../../src/lib/copilot-conflict-resolution'
 import { IFileConflictContext } from '../../src/lib/copilot-conflict-context'
 
 // ---------------------------------------------------------------------------

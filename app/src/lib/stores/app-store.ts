@@ -368,12 +368,14 @@ import {
 import { updateStore } from '../../ui/lib/update-store'
 import { BypassReasonType } from '../../ui/secret-scanning/bypass-push-protection-dialog'
 import { getRepoHooks } from '../hooks/get-repo-hooks'
-import { ICopilotConflictResolutionResponse } from '../copilot-conflict-resolution'
+import {
+  ICopilotConflictResolutionResponse,
+  IConflictResolutionProgress,
+} from '../copilot-conflict-resolution'
 import {
   buildConflictContext,
   gatherCommitContext,
 } from '../copilot-conflict-context'
-import { IConflictResolutionProgress } from './copilot-store'
 
 const LastSelectedRepositoryIDKey = 'last-selected-repository-id'
 

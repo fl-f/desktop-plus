@@ -131,8 +131,10 @@ import { ICustomIntegration } from '../../lib/custom-integration'
 import { isAbsolute } from 'path'
 import { CLIAction } from '../../lib/cli-action'
 import { BypassReasonType } from '../secret-scanning/bypass-push-protection-dialog'
-import { ICopilotConflictResolutionResponse } from '../../lib/copilot-conflict-resolution'
-import { IConflictResolutionProgress } from '../../lib/stores/copilot-store'
+import {
+  ICopilotConflictResolutionResponse,
+  IConflictResolutionProgress,
+} from '../../lib/copilot-conflict-resolution'
 
 /**
  * An error handler function.
