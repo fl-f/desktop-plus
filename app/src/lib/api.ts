@@ -533,31 +533,6 @@ export interface IAPIIssue {
   readonly state: 'open' | 'closed'
   readonly updated_at: string
 }
-export interface IBitbucketAPIIssue {
-  readonly id: number
-  readonly title: string
-  readonly state:
-    | 'submitted'
-    | 'new'
-    | 'open'
-    | 'resolved'
-    | 'on hold'
-    | 'invalid'
-    | 'duplicate'
-    | 'wontfix'
-    | 'closed'
-  readonly updated_on: string
-}
-function toIAPIIssue(issue: IBitbucketAPIIssue): IAPIIssue {
-  return {
-    number: issue.id,
-    title: issue.title,
-    state: ['submitted', 'new', 'open'].includes(issue.state)
-      ? 'open'
-      : 'closed',
-    updated_at: issue.updated_on,
-  }
-}
 
 /** The combined state of a ref. */
 export type APIRefState = 'failure' | 'pending' | 'success' | 'error'
@@ -1411,6 +1386,10 @@ export interface IAPICreatePushProtectionBypassResponse {
   token_type: string
 }
 
+interface IBitbucketAPIWorkspaceAccess {
+  administrator: boolean
+  workspace: IBitbucketAPIWorkspace
+}
 interface IBitbucketAPIWorkspace {
   uuid: string
   name: string
@@ -3124,35 +3103,10 @@ export class BitbucketAPI extends API {
     return null
   }
 
-  public override async fetchIssues(
-    owner: string,
-    name: string,
-    state: 'open' | 'closed' | 'all',
-    _since: Date | null
-  ): Promise<ReadonlyArray<IAPIIssue>> {
-    // TODO: I don't have any way to test this since we don't use Bitbucket's built in issue tracker. Feel free to implement date filtering (since) if you need it.
-    const QUERY_ALL = ''
-    const QUERY_OPEN = 'state="new" OR state="open" OR state="submitted"'
-    const QUERY_CLOSED =
-      'state="resolved" OR state="invalid" OR state="on hold" OR state="duplicate" OR state="wontfix" OR state="closed"'
-    const query =
-      state === 'all' ? QUERY_ALL : state === 'open' ? QUERY_OPEN : QUERY_CLOSED
-
-    const params: { [key: string]: string } = {
-      q: query,
-    }
-
-    const url = urlWithQueryString(
-      `repositories/${owner}/${name}/issues`,
-      params
-    )
-    try {
-      const issues = await this.fetchAll<IBitbucketAPIIssue>(url)
-      return issues.map(toIAPIIssue)
-    } catch (e) {
-      log.warn(`fetchIssues: failed for repository ${owner}/${name}`, e)
-      throw e
-    }
+  public override async fetchIssues(): Promise<ReadonlyArray<IAPIIssue>> {
+    // The Bitbucket issue tracker has been deprecated and the API doesn't seem to support fetching Jira issues.
+    // https://community.atlassian.com/forums/Bitbucket-articles/Announcing-sunset-of-Bitbucket-Issues-and-Wikis/ba-p/3193882
+    return []
   }
 
   public override async fetchCombinedRefStatus(
@@ -3215,9 +3169,9 @@ export class BitbucketAPI extends API {
     callback: (repos: ReadonlyArray<IAPIRepository>) => void
   ) {
     try {
-      const workspaces = await this.getAllWorkspaces()
-      for (const workspace of workspaces) {
-        const path = `repositories/${workspace.uuid}`
+      const workspaceAccessList = await this.getAllWorkspaces()
+      for (const workspaceAccess of workspaceAccessList) {
+        const path = `repositories/${workspaceAccess.workspace.uuid}`
         const repos = await this.fetchAll<IBitbucketAPIRepository>(path)
         callback(repos.map(toIAPIRepository))
       }
@@ -3241,10 +3195,10 @@ export class BitbucketAPI extends API {
     return undefined
   }
 
-  private async getAllWorkspaces(): Promise<IBitbucketAPIWorkspace[]> {
+  private async getAllWorkspaces(): Promise<IBitbucketAPIWorkspaceAccess[]> {
     try {
-      const path = 'workspaces'
-      return await this.fetchAll<IBitbucketAPIWorkspace>(path)
+      const path = 'user/workspaces'
+      return await this.fetchAll<IBitbucketAPIWorkspaceAccess>(path)
     } catch (err) {
       log.debug(`Failed fetching workspaces`, err)
       return []
