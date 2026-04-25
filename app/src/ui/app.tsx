@@ -2598,6 +2598,7 @@ export class App extends React.Component<IAppProps, IAppState> {
             prRecentBaseBranches={prRecentBaseBranches}
             repository={repository}
             externalEditorLabel={externalEditorLabel}
+            showDiffMinimap={this.state.showDiffMinimap}
             showSideBySideDiff={showSideBySideDiff}
             currentBranchHasPullRequest={currentBranchHasPullRequest}
             branchSortOrder={this.state.branchSortOrder}
@@ -3786,6 +3787,7 @@ export class App extends React.Component<IAppProps, IAppState> {
           showDiffCheckMarks={state.showDiffCheckMarks}
           preferAbsoluteDates={state.preferAbsoluteDates}
           showSideBySideDiff={state.showSideBySideDiff}
+          showDiffMinimap={state.showDiffMinimap}
           focusCommitMessage={state.focusCommitMessage}
           askForConfirmationOnDiscardChanges={
             state.askForConfirmationOnDiscardChanges
