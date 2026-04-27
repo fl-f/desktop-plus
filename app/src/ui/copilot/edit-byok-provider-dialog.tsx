@@ -454,7 +454,7 @@ export class EditCopilotBYOKProviderDialog extends React.Component<
       return 'Please enter a base URL.'
     }
     if (!isValidBYOKBaseUrl(trimmedUrl)) {
-      return 'Base URL must be a valid http or https URL.'
+      return 'Base URL must be an https URL, or an http URL pointing at the local machine.'
     }
 
     const trimmedModels = this.state.models.filter(m => m.id.trim() !== '')

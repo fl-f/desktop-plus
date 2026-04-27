@@ -103,9 +103,20 @@ describe('encode/parseModelKey', () => {
 })
 
 describe('isValidBYOKBaseUrl', () => {
-  it('accepts http and https URLs', () => {
-    assert.strictEqual(isValidBYOKBaseUrl('http://localhost:11434/v1'), true)
+  it('accepts https URLs', () => {
     assert.strictEqual(isValidBYOKBaseUrl('https://api.openai.com/v1'), true)
+  })
+
+  it('accepts http URLs that point at the local machine', () => {
+    assert.strictEqual(isValidBYOKBaseUrl('http://localhost:11434/v1'), true)
+    assert.strictEqual(isValidBYOKBaseUrl('http://127.0.0.1:11434/'), true)
+    assert.strictEqual(isValidBYOKBaseUrl('http://[::1]:11434/'), true)
+  })
+
+  it('rejects http URLs that point at non-loopback hosts', () => {
+    assert.strictEqual(isValidBYOKBaseUrl('http://api.openai.com/v1'), false)
+    assert.strictEqual(isValidBYOKBaseUrl('http://192.168.1.5/'), false)
+    assert.strictEqual(isValidBYOKBaseUrl('http://0.0.0.0:11434/'), false)
   })
 
   it('rejects file:// URLs', () => {

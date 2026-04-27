@@ -228,11 +228,22 @@ export function isLocalBaseUrl(baseUrl: string): boolean {
  * Returns true if the given string parses as an absolute http:// or https://
  * URL. Used as the single source of truth for `baseUrl` validation in both
  * the dialog and the localStorage loader.
+ *
+ * `http://` is only accepted when the host is on the local machine (see
+ * {@link isLocalBaseUrl}); sending an API key to an arbitrary remote host
+ * over plaintext HTTP would leak the credential to anyone on the network
+ * path.
  */
 export function isValidBYOKBaseUrl(value: string): boolean {
   try {
     const parsed = new URL(value)
-    return parsed.protocol === 'http:' || parsed.protocol === 'https:'
+    if (parsed.protocol === 'https:') {
+      return true
+    }
+    if (parsed.protocol === 'http:' && isLocalBaseUrl(value)) {
+      return true
+    }
+    return false
   } catch {
     return false
   }
