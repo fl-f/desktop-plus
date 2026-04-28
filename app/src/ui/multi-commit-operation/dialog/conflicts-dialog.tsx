@@ -135,6 +135,7 @@ export class ConflictsDialog extends React.Component<
     files: ReadonlyArray<WorkingDirectoryFileChange>
   ) {
     let isFirstUnmergedFile = true
+    const externalEditorName = this.getExternalEditorName()
     return (
       <ul className="unmerged-file-statuses">
         {files.map(f => {
@@ -144,7 +145,7 @@ export class ConflictsDialog extends React.Component<
             return renderUnmergedFile({
               path: f.path,
               status: f.status,
-              resolvedExternalEditor: this.props.resolvedExternalEditor,
+              resolvedExternalEditor: externalEditorName,
               openFileInExternalEditor: this.props.openFileInExternalEditor,
               repository: this.props.repository,
               dispatcher: this.props.dispatcher,
@@ -162,6 +163,17 @@ export class ConflictsDialog extends React.Component<
         })}
       </ul>
     )
+  }
+
+  private getExternalEditorName() {
+    const { repository, resolvedExternalEditor } = this.props
+    const repoEditor = repository.customEditorOverride
+    if (!repoEditor) {
+      return resolvedExternalEditor
+    }
+    return repoEditor.useCustomEditor
+      ? 'External Editor'
+      : repoEditor.selectedExternalEditor
   }
 
   private renderContent(
