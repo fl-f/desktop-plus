@@ -83,6 +83,7 @@ export class AppWindow {
         windowOptions.frame = false
       }
       windowOptions.icon = join(__dirname, 'static', 'logos', '512x512.png')
+      windowOptions.autoHideMenuBar = readMainProcessConfig().autoHideMenuBar
 
       // relax restriction here for users trying to run app at a small
       // resolution and any other side-effects of dropping this restriction are

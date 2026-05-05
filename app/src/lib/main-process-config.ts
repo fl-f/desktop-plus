@@ -7,11 +7,13 @@ import { TitleBarStyle } from '../ui/lib/title-bar-style'
 export type MainProcessConfig = {
   titleBarStyle: TitleBarStyle
   hideWindowOnQuit: boolean
+  autoHideMenuBar: boolean
 }
 
 const DEFAULT_CONFIG: MainProcessConfig = {
   titleBarStyle: 'native',
   hideWindowOnQuit: false,
+  autoHideMenuBar: false,
 }
 
 let cachedMainProcessConfig: MainProcessConfig | null = null
