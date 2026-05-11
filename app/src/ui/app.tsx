@@ -3472,6 +3472,7 @@ export class App extends React.Component<IAppProps, IAppState> {
       <WorktreeDropdown
         dispatcher={this.props.dispatcher}
         repository={repository}
+        worktrees={selection.state.worktrees}
         isOpen={isOpen}
         onDropDownStateChanged={this.onWorktreeDropdownStateChanged}
         enableFocusTrap={enableFocusTrap}

@@ -3763,6 +3763,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
       gitStore.loadStashEntries(),
       this._refreshAuthor(repository),
       this._refreshHasCommitHooks(repository),
+      this._refreshWorktrees(repository),
       refreshSectionPromise,
     ])
 
@@ -4016,6 +4017,16 @@ export class AppStore extends TypedBaseStore<IAppState> {
       commitAuthor,
     }))
     this.emitUpdate()
+  }
+
+  private async _refreshWorktrees(repository: Repository): Promise<void> {
+    try {
+      const worktrees = await listWorktrees(repository)
+      this.repositoryStateCache.update(repository, () => ({ worktrees }))
+      this.emitUpdate()
+    } catch (e) {
+      log.error('Failed to refresh worktrees', e)
+    }
   }
 
   public _updateCommitOptions(

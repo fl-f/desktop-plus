@@ -7,7 +7,6 @@ import { ToolbarDropdown, DropdownState } from './dropdown'
 import { FoldoutType, IConstrainedValue } from '../../lib/app-state'
 import { WorktreeEntry } from '../../models/worktree'
 import { WorktreeList } from '../worktrees/worktree-list'
-import { listWorktrees } from '../../lib/git/worktree'
 import { showContextualMenu } from '../../lib/menu-item'
 import { generateWorktreeContextMenuItems } from '../worktrees/worktree-list-item-context-menu'
 import { PopupType } from '../../models/popup'
@@ -17,6 +16,7 @@ import { enableResizingToolbarButtons } from '../../lib/feature-flag'
 interface IWorktreeDropdownProps {
   readonly dispatcher: Dispatcher
   readonly repository: Repository
+  readonly worktrees: ReadonlyArray<WorktreeEntry>
   readonly isOpen: boolean
   readonly onDropDownStateChanged: (state: DropdownState) => void
   readonly enableFocusTrap: boolean
@@ -24,7 +24,6 @@ interface IWorktreeDropdownProps {
 }
 
 interface IWorktreeDropdownState {
-  readonly worktrees: ReadonlyArray<WorktreeEntry>
   readonly filterText: string
 }
 
@@ -35,26 +34,7 @@ export class WorktreeDropdown extends React.Component<
   public constructor(props: IWorktreeDropdownProps) {
     super(props)
     this.state = {
-      worktrees: [],
       filterText: '',
-    }
-  }
-
-  public componentDidUpdate(prevProps: IWorktreeDropdownProps) {
-    if (!prevProps.isOpen && this.props.isOpen) {
-      this.fetchWorktrees()
-    }
-  }
-
-  private async fetchWorktrees() {
-    const { repository } = this.props
-
-    try {
-      const worktrees = await listWorktrees(repository)
-      this.setState({ worktrees })
-    } catch (e) {
-      log.error('Failed to fetch worktrees', e)
-      this.setState({ worktrees: [] })
     }
   }
 
@@ -113,7 +93,7 @@ export class WorktreeDropdown extends React.Component<
   }
 
   private renderWorktreeFoldout = (): JSX.Element | null => {
-    const { worktrees } = this.state
+    const { worktrees } = this.props
 
     return (
       <WorktreeList
@@ -131,7 +111,7 @@ export class WorktreeDropdown extends React.Component<
 
   private getCurrentWorktree(): WorktreeEntry | null {
     const repoPath = this.props.repository.path
-    return this.state.worktrees.find(wt => wt.path === repoPath) ?? null
+    return this.props.worktrees.find(wt => wt.path === repoPath) ?? null
   }
 
   private onResize = (width: number) => {
