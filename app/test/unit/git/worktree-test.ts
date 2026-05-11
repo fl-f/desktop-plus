@@ -1,4 +1,5 @@
 import assert from 'node:assert'
+import * as Path from 'path'
 import { describe, it } from 'node:test'
 import { exec } from 'dugite'
 import { setupEmptyRepository } from '../../helpers/repositories'
@@ -25,7 +26,7 @@ describe('git/worktree', () => {
       const entries = parseWorktreePorcelainOutput(output)
       assert.strictEqual(entries.length, 1)
       assert.deepStrictEqual(entries[0], {
-        path: '/path/to/repo',
+        path: Path.normalize('/path/to/repo'),
         head: 'abc1234abc1234abc1234abc1234abc1234abc123',
         branch: 'refs/heads/main',
         isDetached: false,
@@ -53,10 +54,10 @@ describe('git/worktree', () => {
       assert.strictEqual(entries.length, 2)
 
       assert.strictEqual(entries[0].type, 'main')
-      assert.strictEqual(entries[0].path, '/path/to/repo')
+      assert.strictEqual(entries[0].path, Path.normalize('/path/to/repo'))
 
       assert.strictEqual(entries[1].type, 'linked')
-      assert.strictEqual(entries[1].path, '/path/to/linked')
+      assert.strictEqual(entries[1].path, Path.normalize('/path/to/linked'))
       assert.strictEqual(entries[1].branch, 'refs/heads/feature')
     })
 
@@ -153,8 +154,8 @@ describe('git/worktree', () => {
       ].join('\0\0') + '\0'
 
       const entries = parseWorktreePorcelainOutput(output)
-      assert.strictEqual(entries[0].path, '/path/to/my repo')
-      assert.strictEqual(entries[1].path, '/path/to/my other worktree')
+      assert.strictEqual(entries[0].path, Path.normalize('/path/to/my repo'))
+      assert.strictEqual(entries[1].path, Path.normalize('/path/to/my other worktree'))
     })
 
     it('parses worktree with locked and prunable flags combined', () => {
@@ -195,8 +196,8 @@ describe('git/worktree', () => {
       ].join('\0\0') + '\0'
 
       const entries = parseWorktreePorcelainOutput(output)
-      assert.strictEqual(entries[0].path, '/path/to/my\nrepo')
-      assert.strictEqual(entries[1].path, '/path/to/my\nother\nworktree')
+      assert.strictEqual(entries[0].path, Path.normalize('/path/to/my\nrepo'))
+      assert.strictEqual(entries[1].path, Path.normalize('/path/to/my\nother\nworktree'))
     })
   })
 
