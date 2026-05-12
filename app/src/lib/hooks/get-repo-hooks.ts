@@ -1,7 +1,6 @@
 import { exec } from 'dugite'
 import { access, constants, readdir } from 'fs/promises'
 import { basename, join, resolve } from 'path'
-import { getGitDir } from '../git'
 
 const isExecutable = (path: string) =>
   access(path, constants.X_OK)
@@ -39,6 +38,31 @@ const knownHooks = [
   'post-index-change',
 ]
 
+// getRepoHooks is used by withHooksEnv which is used by git in core.ts so we
+// have to be careful to not accidentally run into a circular dependency here
+// where we invoke git which calls us which calls git which calls us, etc. To
+// avoid that we call dugite directly here.
+const git = (args: string[], path: string) =>
+  exec(args, path).then(({ exitCode, stdout, stderr }) => {
+    return exitCode === 0
+      ? stdout
+      : Promise.reject(
+          new Error(`Git command failed with exit code ${exitCode}: ${stderr}`)
+        )
+  })
+
+const getGitDir = async (path: string) =>
+  resolve(
+    path,
+    (await git(['rev-parse', '--git-dir'], path)).replace(/\r?\n$/, '')
+  )
+
+const getConfigValue = async (path: string, key: string) =>
+  resolve(
+    path,
+    (await git(['config', '-z', '--get', key], path)).split('\0')[0]
+  )
+
 /**
  * Returns the names of executable Git hooks found in the given repository.
  *
@@ -54,18 +78,9 @@ export async function* getRepoHooks(
   gitDir: string | undefined,
   filter?: string[]
 ) {
-  const { exitCode, stdout } = await exec(
-    ['config', '-z', '--get', 'core.hooksPath'],
-    path
+  const hooksPath = await getConfigValue(path, 'core.hooksPath').catch(
+    async () => resolve(gitDir ?? (await getGitDir(path)), 'hooks')
   )
-
-  const hooksPath =
-    exitCode === 0
-      ? resolve(path, stdout.split('\0')[0])
-      : join(
-          gitDir ?? (await getGitDir(path)) ?? resolve(path, '.git'),
-          'hooks'
-        )
 
   const files = await readdir(hooksPath, { withFileTypes: true })
     .then(entries => entries.filter(x => x.isFile()))
