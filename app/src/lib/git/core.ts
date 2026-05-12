@@ -382,6 +382,7 @@ export async function git(
         hooksEnv
       ),
     path,
+    Path.join(path, '.git'),
     options
   )
 }

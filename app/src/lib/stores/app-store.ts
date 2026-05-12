@@ -4008,7 +4008,11 @@ export class AppStore extends TypedBaseStore<IAppState> {
   private async _refreshHasCommitHooks(repository: Repository): Promise<void> {
     const hooks = ['pre-commit', 'commit-msg']
     // Break early if we find either one of the hooks
-    for await (const {} of getRepoHooks(repository.path, hooks)) {
+    for await (const {} of getRepoHooks(
+      repository.path,
+      repository.resolvedGitDir,
+      hooks
+    )) {
       const hasCommitHooks = true
       this.repositoryStateCache.update(repository, () => ({ hasCommitHooks }))
       this.emitUpdate()

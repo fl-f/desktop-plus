@@ -29,13 +29,16 @@ const memoizedGetShellEnv = memoizeOne(
 export async function withHooksEnv<T>(
   fn: (env: Record<string, string | undefined> | undefined) => Promise<T>,
   path: string,
+  gitDir: string,
   opts: IGitExecutionOptions | undefined
 ): Promise<T> {
   if (!opts?.interceptHooks || !getHooksEnvEnabled()) {
     return fn(opts?.env)
   }
 
-  const hooks = await Array.fromAsync(getRepoHooks(path, opts.interceptHooks))
+  const hooks = await Array.fromAsync(
+    getRepoHooks(path, gitDir, opts.interceptHooks)
+  )
 
   if (hooks.length === 0) {
     return fn(opts?.env)

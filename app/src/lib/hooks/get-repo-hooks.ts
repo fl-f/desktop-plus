@@ -43,10 +43,16 @@ const knownHooks = [
  *
  * @param path   The file system path to the Git repository (root of working
  *               directory).
+ * @param gitDir The path to the .git directory for this repository. Used as
+ *               the default hooks location when core.hooksPath is not set.
  * @param filter An optional array of hook names to filter the results.
  *               Including '*' will return all hooks.
  */
-export async function* getRepoHooks(path: string, filter?: string[]) {
+export async function* getRepoHooks(
+  path: string,
+  gitDir: string,
+  filter?: string[]
+) {
   const { exitCode, stdout } = await exec(
     ['config', '-z', '--get', 'core.hooksPath'],
     path
@@ -55,7 +61,7 @@ export async function* getRepoHooks(path: string, filter?: string[]) {
   const hooksPath =
     exitCode === 0
       ? resolve(path, stdout.split('\0')[0])
-      : join(path, '.git', 'hooks')
+      : join(gitDir, 'hooks')
 
   const files = await readdir(hooksPath, { withFileTypes: true })
     .then(entries => entries.filter(x => x.isFile()))
