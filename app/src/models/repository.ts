@@ -58,7 +58,13 @@ export class Repository {
      * onboarding flow. Tutorial repositories trigger a tutorial user experience
      * which introduces new users to some core concepts of Git and GitHub.
      */
-    public readonly isTutorialRepository: boolean = false
+    public readonly isTutorialRepository: boolean = false,
+    /**
+     * The path to the .git directory for this repository, or undefined if it
+     * hasn't been resolved yet (e.g. for repositories added before this
+     * property was introduced).
+     */
+    public readonly gitDir: string | undefined = undefined
   ) {
     this.mainWorkTree = { path }
     this.name = (gitHubRepository && gitHubRepository.name) || getBaseName(path)
@@ -70,7 +76,8 @@ export class Repository {
       this.missing,
       this.alias,
       this.workflowPreferences.forkContributionTarget,
-      this.isTutorialRepository
+      this.isTutorialRepository,
+      this.gitDir
     )
   }
 

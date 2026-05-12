@@ -3657,13 +3657,20 @@ export class AppStore extends TypedBaseStore<IAppState> {
       return repository
     }
 
+    const type = await getRepositoryType(repository.path)
+
     const foundRepository =
-      (await pathExists(repository.path)) &&
-      (await getRepositoryType(repository.path)).kind === 'regular' &&
-      (await this._loadStatus(repository)) !== null
+      type.kind === 'regular' && (await this._loadStatus(repository)) !== null
 
     if (foundRepository) {
-      return await this._updateRepositoryMissing(repository, false)
+      let recovered = await this._updateRepositoryMissing(repository, false)
+      if (type.kind === 'regular' && recovered.gitDir !== type.gitDir) {
+        recovered = await this.repositoriesStore.updateRepositoryGitDir(
+          recovered,
+          type.gitDir
+        )
+      }
+      return recovered
     }
     return repository
   }
@@ -3680,6 +3687,17 @@ export class AppStore extends TypedBaseStore<IAppState> {
     if (!exists) {
       this._updateRepositoryMissing(repository, true)
       return
+    }
+
+    // Populate gitDir for repositories that don't have it yet
+    if (repository.gitDir === undefined) {
+      const type = await getRepositoryType(repository.path)
+      if (type.kind === 'regular') {
+        repository = await this.repositoriesStore.updateRepositoryGitDir(
+          repository,
+          type.gitDir
+        )
+      }
     }
 
     const state = this.repositoryStateCache.get(repository)
@@ -6845,7 +6863,8 @@ export class AppStore extends TypedBaseStore<IAppState> {
       await this.repositoriesStore.addTutorialRepository(
         validatedPath,
         endpoint,
-        apiRepository
+        apiRepository,
+        type.gitDir
       )
       this.tutorialAssessor.onNewTutorialRepository()
     } else {
@@ -6891,7 +6910,8 @@ export class AppStore extends TypedBaseStore<IAppState> {
         }
 
         const addedRepo = await this.repositoriesStore.addRepository(
-          validatedPath
+          validatedPath,
+          { gitDir: repositoryType.gitDir }
         )
 
         // initialize the remotes for this new repository to ensure it can fetch

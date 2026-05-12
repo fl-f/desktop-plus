@@ -4,7 +4,7 @@ import { resolve } from 'path'
 
 export type RepositoryType =
   | { kind: 'bare' }
-  | { kind: 'regular'; topLevelWorkingDirectory: string }
+  | { kind: 'regular'; topLevelWorkingDirectory: string; gitDir: string }
   | { kind: 'missing' }
   | { kind: 'unsafe'; path: string }
 
@@ -22,18 +22,22 @@ export async function getRepositoryType(path: string): Promise<RepositoryType> {
 
   try {
     const result = await git(
-      ['rev-parse', '--is-bare-repository', '--show-cdup'],
+      ['rev-parse', '--is-bare-repository', '--show-cdup', '--git-dir'],
       path,
       'getRepositoryType',
       { successExitCodes: new Set([0, 128]) }
     )
 
     if (result.exitCode === 0) {
-      const [isBare, cdup] = result.stdout.split('\n', 2)
+      const [isBare, cdup, gitDir] = result.stdout.split('\n', 3)
 
       return isBare === 'true'
         ? { kind: 'bare' }
-        : { kind: 'regular', topLevelWorkingDirectory: resolve(path, cdup) }
+        : {
+            kind: 'regular',
+            topLevelWorkingDirectory: resolve(path, cdup),
+            gitDir: resolve(path, gitDir),
+          }
     }
 
     const unsafeMatch =
