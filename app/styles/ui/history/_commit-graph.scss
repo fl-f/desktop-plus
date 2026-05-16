@@ -394,6 +394,7 @@
   .focus-within:not(.in-keyboard-insertion-mode) .list-item.selected {
     .commitGraph-dot {
       stroke: var(--box-selected-active-background-color);
+      fill: white;
     }
 
     .commitGraph-unpushed-indicator {

@@ -37,7 +37,7 @@ interface ICommitGraphCommitListItemProps {
 const commitGraph_LaneGap = 18
 const commitGraph_LeadingPadding = 8
 const commitGraph_MessageGap = 16
-const commitGraph_DotRadius = 4
+const commitGraph_DotRadius = 5
 const commitGraph_RecentCommitWeekdayThreshold = 6
 const commitGraph_ShortRefLabelLength = 12
 
