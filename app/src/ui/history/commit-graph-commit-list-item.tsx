@@ -97,10 +97,10 @@ export class CommitGraphCommitListItem extends React.PureComponent<ICommitGraphC
               text={commitSummary}
             />
           </div>
-          {this.commitGraph_renderCommitterBadge(avatarUsers)}
           <span className="commitGraph-date">
             {this.commitGraph_renderCommitTime(commit.author.date)}
           </span>
+          {this.commitGraph_renderCommitterBadge(avatarUsers)}
           {this.commitGraph_renderUnpushedIndicator()}
         </div>
       </div>

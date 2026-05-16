@@ -211,17 +211,17 @@
   }
 
   .commitGraph-commit-content {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 30px 136px 18px;
+    display: flex;
     align-items: center;
     flex: 1 1 auto;
     min-width: 0;
-    column-gap: var(--spacing-half);
+    gap: var(--spacing-half);
     line-height: 18px;
   }
 
   .commitGraph-message {
     display: flex;
+    flex: 1 1 0;
     align-items: center;
     min-width: 0;
     gap: var(--spacing-half);
@@ -329,11 +329,10 @@
 
   .commitGraph-committer-badge {
     display: flex;
+    flex: 0 0 30px;
     align-items: center;
     justify-content: center;
-    justify-self: center;
     width: 30px;
-    min-width: 30px;
     height: 18px;
 
     .AvatarStack.AvatarStack--small {
@@ -366,9 +365,7 @@
   .commitGraph-date {
     @include ellipsis;
     color: var(--text-secondary-color);
-    justify-self: start;
     min-width: 0;
-    max-width: 100%;
     line-height: 18px;
   }
 
@@ -376,7 +373,6 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    justify-self: center;
     height: 16px;
     min-width: 18px;
     border-radius: 8px;
