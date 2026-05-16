@@ -64,13 +64,19 @@ export interface ICommitGraphLane {
 export interface ICommitGraphConnection {
   readonly fromColumn: number
   readonly toColumn: number
-  readonly color: string
+  /** Color at the commit dot (top of the connection). */
+  readonly fromColor: string
+  /** Color at the parent row (bottom of the connection). */
+  readonly toColor: string
 }
 
 export interface ICommitGraphLaneShift {
   readonly fromColumn: number
   readonly toColumn: number
-  readonly color: string
+  /** Color at the top of the shift (the lane's current color). */
+  readonly fromColor: string
+  /** Color at the bottom of the shift (the lane's next color). */
+  readonly toColor: string
 }
 
 export interface ICommitGraphRow {
@@ -299,7 +305,8 @@ export function commitGraph_buildRows(
       shifts.push({
         fromColumn: laneColumn,
         toColumn: nextColumn,
-        color: nextLane?.color ?? lane.color,
+        fromColor: lane.color,
+        toColor: nextLane?.color ?? lane.color,
       })
     }
 
@@ -311,7 +318,8 @@ export function commitGraph_buildRows(
       connections.push({
         fromColumn: column,
         toColumn,
-        color: parentLane?.color ?? currentLane.color,
+        fromColor: currentLane.color,
+        toColor: parentLane?.color ?? currentLane.color,
       })
     }
 

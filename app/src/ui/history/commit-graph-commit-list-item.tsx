@@ -108,7 +108,7 @@ export class CommitGraphCommitListItem extends React.PureComponent<ICommitGraphC
   }
 
   private commitGraph_renderGraph() {
-    const { commitGraphRow } = this.props
+    const { commitGraphRow, commit } = this.props
     const height = commitGraph_RowHeight
     const width =
       commitGraph_LeadingPadding +
@@ -121,6 +121,55 @@ export class CommitGraphCommitListItem extends React.PureComponent<ICommitGraphC
       commitGraphRow.shifts.map(shift => shift.fromColumn)
     )
 
+    // Build gradient definitions for connections and shifts whose start/end colors
+    // differ. SVG gradient IDs are document-scoped, so embed the commit SHA for
+    // uniqueness. Prefix "c" = connection, "s" = shift.
+    const gradientDefs: JSX.Element[] = []
+    for (let i = 0; i < commitGraphRow.connections.length; i++) {
+      const conn = commitGraphRow.connections[i]
+      if (conn.fromColor === conn.toColor) {
+        continue
+      }
+      const fromX = xForColumn(conn.fromColumn)
+      const toX = xForColumn(conn.toColumn)
+      gradientDefs.push(
+        <linearGradient
+          key={`c${i}`}
+          id={`cg-c${i}-${commit.sha}`}
+          x1={fromX}
+          y1={centerY}
+          x2={toX}
+          y2={height}
+          gradientUnits="userSpaceOnUse"
+        >
+          <stop offset="0%" stopColor={conn.fromColor} />
+          <stop offset="100%" stopColor={conn.toColor} />
+        </linearGradient>
+      )
+    }
+    for (let i = 0; i < commitGraphRow.shifts.length; i++) {
+      const shift = commitGraphRow.shifts[i]
+      if (shift.fromColor === shift.toColor) {
+        continue
+      }
+      const fromX = xForColumn(shift.fromColumn)
+      const toX = xForColumn(shift.toColumn)
+      gradientDefs.push(
+        <linearGradient
+          key={`s${i}`}
+          id={`cg-s${i}-${commit.sha}`}
+          x1={fromX}
+          y1={centerY}
+          x2={toX}
+          y2={height}
+          gradientUnits="userSpaceOnUse"
+        >
+          <stop offset="0%" stopColor={shift.fromColor} />
+          <stop offset="100%" stopColor={shift.toColor} />
+        </linearGradient>
+      )
+    }
+
     return (
       <svg
         className="commitGraph-svg"
@@ -130,6 +179,7 @@ export class CommitGraphCommitListItem extends React.PureComponent<ICommitGraphC
         aria-hidden={true}
         focusable={false}
       >
+        {gradientDefs.length > 0 && <defs>{gradientDefs}</defs>}
         {commitGraphRow.lanes.map(lane => (
           <line
             key={`lane-${lane.column}`}
@@ -157,13 +207,17 @@ export class CommitGraphCommitListItem extends React.PureComponent<ICommitGraphC
           const path = `M ${fromX} ${centerY} C ${fromX} ${
             centerY + 8
           }, ${toX} ${height - 8}, ${toX} ${height}`
+          const stroke =
+            shift.fromColor !== shift.toColor
+              ? `url(#cg-s${index}-${commit.sha})`
+              : shift.toColor
 
           return (
             <path
               key={`shift-${index}`}
               className="commitGraph-line"
               d={path}
-              stroke={shift.color}
+              stroke={stroke}
             />
           )
         })}
@@ -178,13 +232,17 @@ export class CommitGraphCommitListItem extends React.PureComponent<ICommitGraphC
               : `M ${fromX} ${centerY} C ${fromX} ${centerY + 8}, ${toX} ${
                   height - 8
                 }, ${toX} ${height}`
+          const stroke =
+            connection.fromColor !== connection.toColor
+              ? `url(#cg-c${index}-${commit.sha})`
+              : connection.toColor
 
           return (
             <path
               key={`connection-${index}`}
               className="commitGraph-line"
               d={path}
-              stroke={connection.color}
+              stroke={stroke}
             />
           )
         })}
