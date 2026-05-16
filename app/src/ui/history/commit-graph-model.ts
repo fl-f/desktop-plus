@@ -33,9 +33,22 @@ const commitGraph_BackgroundColor = '#9ea4aa'
 // lanes indefinitely, which can make busy histories much wider than needed.
 const commitGraph_MaxMergeConnectorRows = 100
 
+// When a branch-out (lane collapse via deduplication) is immediately followed
+// by a merge that would re-add a lane, the net lane count stays the same but
+// lanes shift unnecessarily. This constant controls how many commits ahead to
+// look: if an upcoming merge (within this distance) would add back a lane,
+// pre-fill the freed slot instead of collapsing. Set to 0 to disable.
+const commitGraph_MinCollapseDistance = 1
+
 interface ICommitGraphActiveLane {
   readonly sha: string
   readonly color: string
+  /**
+   * True when this lane was pre-seeded by a lookahead and hasn't yet been
+   * officially introduced by its merge commit. Pre-filled lanes are excluded
+   * from background lane drawing until the merge row claims them.
+   */
+  readonly preFilled?: boolean
 }
 
 export interface ICommitGraphRefColor {
@@ -159,7 +172,7 @@ export function commitGraph_buildRows(
     const currentLane = lanes[column]
     const lanesToContinue = new Array<ICommitGraphLane>()
     for (let laneColumn = 0; laneColumn < lanes.length; laneColumn++) {
-      if (laneColumn !== column) {
+      if (laneColumn !== column && !lanes[laneColumn].preFilled) {
         const lane = lanes[laneColumn]
         lanesToContinue.push({ column: laneColumn, color: lane.color })
       }
@@ -196,15 +209,72 @@ export function commitGraph_buildRows(
 
     for (let i = 1; i < parents.length; i++) {
       const parent = parents[i]
-      if (!nextLanes.some(lane => lane.sha === parent)) {
+      const existingIdx = nextLanes.findIndex(l => l.sha === parent)
+      if (existingIdx < 0) {
         nextLanes.splice(Math.min(column + 1, nextLanes.length), 0, {
           sha: parent,
           color: colorForSha(parent),
         })
+      } else if (nextLanes[existingIdx].preFilled) {
+        // Lane was pre-seeded by lookahead; officially claim it now.
+        nextLanes[existingIdx] = { ...nextLanes[existingIdx], preFilled: false }
       }
     }
 
     nextLanes = commitGraph_dedupeLanes(nextLanes)
+
+    // If deduplication freed slot(s) and an upcoming merge (within
+    // commitGraph_MinCollapseDistance rows) would insert new parents anyway,
+    // pre-fill those freed slots now so the total lane count stays stable and
+    // adjacent lanes don't shift unnecessarily.
+    if (nextLanes.length < lanes.length) {
+      for (
+        let ahead = 1;
+        ahead <= commitGraph_MinCollapseDistance &&
+        nextLanes.length < lanes.length;
+        ahead++
+      ) {
+        const futureCommit = commits[rowIndex + ahead]
+        if (futureCommit === undefined) {
+          break
+        }
+        const futureColumn = nextLanes.findIndex(
+          l => l.sha === futureCommit.sha
+        )
+        if (futureColumn < 0) {
+          continue
+        }
+
+        for (
+          let pi = 1;
+          pi < futureCommit.parentSHAs.length &&
+          nextLanes.length < lanes.length;
+          pi++
+        ) {
+          const parentSha = futureCommit.parentSHAs[pi]
+          if (!rowIndexBySha.has(parentSha)) {
+            continue
+          }
+          if (nextLanes.some(l => l.sha === parentSha)) {
+            continue
+          }
+
+          const parentRowIndex = rowIndexBySha.get(parentSha)!
+          const isLongConnector =
+            parentRowIndex - (rowIndex + ahead) >
+            commitGraph_MaxMergeConnectorRows
+          if (isLongConnector) {
+            continue
+          }
+
+          nextLanes.splice(Math.min(futureColumn + 1, nextLanes.length), 0, {
+            sha: parentSha,
+            color: colorForSha(parentSha),
+            preFilled: true,
+          })
+        }
+      }
+    }
 
     const columnsByParentSha = new Map<string, number>()
     for (let laneColumn = 0; laneColumn < nextLanes.length; laneColumn++) {
@@ -213,7 +283,7 @@ export function commitGraph_buildRows(
 
     const shifts = new Array<ICommitGraphLaneShift>()
     for (let laneColumn = 0; laneColumn < lanes.length; laneColumn++) {
-      if (laneColumn === column) {
+      if (laneColumn === column || lanes[laneColumn].preFilled) {
         continue
       }
 
