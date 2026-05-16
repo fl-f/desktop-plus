@@ -24,6 +24,12 @@ interface IDiffHeaderProps {
   /** Called when the user changes the diff minimap setting. */
   readonly onShowDiffMinimapChanged: (checked: boolean) => void
 
+  /** Whether we should show moved line indicators in diffs. */
+  readonly showMovedLineIndicators: boolean
+
+  /** Called when the user changes the moved line indicators setting. */
+  readonly onShowMovedLineIndicatorsChanged: (checked: boolean) => void
+
   /** Whether the current diff can be expanded to show the whole file. */
   readonly canExpandWholeFile: boolean
 
@@ -92,6 +98,10 @@ export class DiffHeader extends React.Component<IDiffHeaderProps, {}> {
           this.props.onHideWhitespaceInDiffChanged
         }
         hideWhitespaceChanges={this.props.hideWhitespaceInDiff}
+        showMovedLineIndicators={this.props.showMovedLineIndicators}
+        onShowMovedLineIndicatorsChanged={
+          this.props.onShowMovedLineIndicatorsChanged
+        }
         onShowSideBySideDiffChanged={this.props.onShowSideBySideDiffChanged}
         showSideBySideDiff={this.props.showSideBySideDiff}
         onShowDiffMinimapChanged={this.props.onShowDiffMinimapChanged}

@@ -2472,6 +2472,11 @@ export class Dispatcher {
     return this.appStore._setShowDiffMinimap(showDiffMinimap)
   }
 
+  /** Change the moved line indicators setting */
+  public onShowMovedLineIndicatorsChanged(showMovedLineIndicators: boolean) {
+    return this.appStore._setShowMovedLineIndicators(showMovedLineIndicators)
+  }
+
   /** Install the global Git LFS filters. */
   public installGlobalLFSFilters(force: boolean): Promise<void> {
     return this.appStore._installGlobalLFSFilters(force)

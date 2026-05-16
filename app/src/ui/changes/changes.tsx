@@ -56,6 +56,9 @@ interface IChangesProps {
   /** Whether we should display the diff minimap. */
   readonly showDiffMinimap: boolean
 
+  /** Whether we should show moved line indicators. */
+  readonly showMovedLineIndicators: boolean
+
   /** Whether or not to show the diff check marks indicating inclusion in a commit */
   readonly showDiffCheckMarks: boolean
 
@@ -143,6 +146,10 @@ export class Changes extends DiffPresentationStateComponent<
           onShowSideBySideDiffChanged={this.onShowSideBySideDiffChanged}
           showDiffMinimap={this.props.showDiffMinimap}
           onShowDiffMinimapChanged={this.onShowDiffMinimapChanged}
+          showMovedLineIndicators={this.props.showMovedLineIndicators}
+          onShowMovedLineIndicatorsChanged={
+            this.onShowMovedLineIndicatorsChanged
+          }
           canExpandWholeFile={this.state.canExpandWholeFile}
           showWholeFile={showWholeFileInHeader}
           onShowWholeFileChanged={this.onShowWholeFileChanged}
@@ -162,6 +169,7 @@ export class Changes extends DiffPresentationStateComponent<
           hideWhitespaceInDiff={this.props.hideWhitespaceInDiff}
           showSideBySideDiff={this.props.showSideBySideDiff}
           showDiffMinimap={this.props.showDiffMinimap}
+          showMovedLineIndicators={this.props.showMovedLineIndicators}
           showWholeFile={this.state.showWholeFile}
           onShowWholeFileChanged={this.onShowWholeFileChanged}
           onWholeFileExpansionAvailabilityChanged={

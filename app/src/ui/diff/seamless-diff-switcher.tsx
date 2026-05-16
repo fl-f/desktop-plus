@@ -73,6 +73,11 @@ interface ISeamlessDiffSwitcherProps {
   // eslint-disable-next-line react/no-unused-prop-types
   readonly showDiffMinimap: boolean
 
+  /** Whether we should show moved line indicators. */
+  // Used in getDerivedStateFromProps, no-unused-prop-types doesn't know that
+  // eslint-disable-next-line react/no-unused-prop-types
+  readonly showMovedLineIndicators: boolean
+
   /** Whether contextual gaps should be expanded to show the whole file. */
   readonly showWholeFile?: boolean
 
@@ -381,6 +386,7 @@ export class SeamlessDiffSwitcher extends React.Component<
       hideWhitespaceInDiff,
       showSideBySideDiff,
       showDiffMinimap,
+      showMovedLineIndicators,
       showDiffCheckMarks,
       onIncludeChanged,
       onDiscardChanges,
@@ -416,6 +422,7 @@ export class SeamlessDiffSwitcher extends React.Component<
             hideWhitespaceInDiff={hideWhitespaceInDiff}
             showSideBySideDiff={showSideBySideDiff}
             showDiffMinimap={showDiffMinimap}
+            showMovedLineIndicators={showMovedLineIndicators}
             showWholeFile={this.props.showWholeFile}
             onShowWholeFileChanged={this.props.onShowWholeFileChanged}
             askForConfirmationOnDiscardChanges={

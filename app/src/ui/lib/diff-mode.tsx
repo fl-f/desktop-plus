@@ -4,6 +4,8 @@ export const ShowSideBySideDiffDefault = false
 const showSideBySideDiffKey = 'show-side-by-side-diff'
 export const ShowDiffMinimapDefault = false
 const showDiffMinimapKey = 'show-diff-minimap'
+export const ShowMovedLineIndicatorsDefault = true
+const showMovedLineIndicatorsKey = 'show-moved-line-indicators'
 export const ShowWholeFileDefault = false
 const showWholeFileKey = 'show-whole-file'
 
@@ -35,6 +37,20 @@ export function getShowDiffMinimap(): boolean {
  */
 export function setShowDiffMinimap(showDiffMinimap: boolean) {
   setBoolean(showDiffMinimapKey, showDiffMinimap)
+}
+
+/**
+ * Gets a value indicating whether to show moved line indicators in diffs.
+ */
+export function getShowMovedLineIndicators(): boolean {
+  return getBoolean(showMovedLineIndicatorsKey, ShowMovedLineIndicatorsDefault)
+}
+
+/**
+ * Sets a local storage key indicating whether to show moved line indicators.
+ */
+export function setShowMovedLineIndicators(showMovedLineIndicators: boolean) {
+  setBoolean(showMovedLineIndicatorsKey, showMovedLineIndicators)
 }
 
 /**

@@ -158,6 +158,9 @@ interface ISideBySideDiffProps {
   /** Whether we'll show the diff minimap. */
   readonly showDiffMinimap: boolean
 
+  /** Whether we'll show moved line indicators. */
+  readonly showMovedLineIndicators: boolean
+
   /** Whether contextual gaps should be expanded to show the whole file. */
   readonly showWholeFile?: boolean
 
@@ -724,7 +727,8 @@ export class SideBySideDiff extends React.Component<
     return getDiffRows(
       diff,
       this.props.showSideBySideDiff,
-      this.canExpandDiff()
+      this.canExpandDiff(),
+      this.props.showMovedLineIndicators
     )
   }
 
@@ -892,7 +896,8 @@ export class SideBySideDiff extends React.Component<
     const rows = getDiffRows(
       diff,
       this.props.showSideBySideDiff,
-      this.canExpandDiff()
+      this.canExpandDiff(),
+      this.props.showMovedLineIndicators
     )
     const row = rows[rowIndex]
 
@@ -1056,7 +1061,8 @@ export class SideBySideDiff extends React.Component<
     const rows = getDiffRows(
       diff,
       this.props.showSideBySideDiff,
-      this.canExpandDiff()
+      this.canExpandDiff(),
+      this.props.showMovedLineIndicators
     )
 
     const row = rows[index]
@@ -1421,7 +1427,8 @@ export class SideBySideDiff extends React.Component<
     const rows = getDiffRows(
       diff,
       this.props.showSideBySideDiff,
-      this.canExpandDiff()
+      this.canExpandDiff(),
+      this.props.showMovedLineIndicators
     )
     const row = rows[rowNumber]
 
@@ -1918,7 +1925,8 @@ export class SideBySideDiff extends React.Component<
       this.state.diff,
       this.props.showSideBySideDiff,
       searchQuery,
-      this.canExpandDiff()
+      this.canExpandDiff(),
+      this.props.showMovedLineIndicators
     )
 
     if (searchResults === undefined || searchResults.length === 0) {
@@ -2048,7 +2056,8 @@ function highlightParametersEqual(
 const getDiffRows = memoize(function (
   diff: ITextDiff,
   showSideBySideDiff: boolean,
-  enableDiffExpansion: boolean
+  enableDiffExpansion: boolean,
+  showMovedLineIndicators: boolean
 ): ReadonlyArray<SimplifiedDiffRow> {
   const outputRows = new Array<SimplifiedDiffRow>()
 
@@ -2057,7 +2066,8 @@ const getDiffRows = memoize(function (
       index,
       hunk,
       showSideBySideDiff,
-      enableDiffExpansion
+      enableDiffExpansion,
+      showMovedLineIndicators
     )) {
       outputRows.push(row)
     }
@@ -2081,7 +2091,8 @@ function getDiffRowsFromHunk(
   hunkIndex: number,
   hunk: DiffHunk,
   showSideBySideDiff: boolean,
-  enableDiffExpansion: boolean
+  enableDiffExpansion: boolean,
+  showMovedLineIndicators: boolean
 ): ReadonlyArray<SimplifiedDiffRow> {
   const rows = new Array<SimplifiedDiffRow>()
 
@@ -2102,7 +2113,11 @@ function getDiffRowsFromHunk(
     if (modifiedLines.length > 0) {
       // If the current line is not added/deleted and we have any added/deleted
       // line stored, we need to process them.
-      for (const row of getModifiedRows(modifiedLines, showSideBySideDiff)) {
+      for (const row of getModifiedRows(
+        modifiedLines,
+        showSideBySideDiff,
+        showMovedLineIndicators
+      )) {
         rows.push(row)
       }
       modifiedLines = []
@@ -2146,7 +2161,11 @@ function getDiffRowsFromHunk(
 
   // Do one more pass to process the remaining list of modified lines.
   if (modifiedLines.length > 0) {
-    for (const row of getModifiedRows(modifiedLines, showSideBySideDiff)) {
+    for (const row of getModifiedRows(
+      modifiedLines,
+      showSideBySideDiff,
+      showMovedLineIndicators
+    )) {
       rows.push(row)
     }
   }
@@ -2156,7 +2175,8 @@ function getDiffRowsFromHunk(
 
 function getModifiedRows(
   addedOrDeletedLines: ReadonlyArray<ModifiedLine>,
-  showSideBySideDiff: boolean
+  showSideBySideDiff: boolean,
+  showMovedLineIndicators: boolean
 ): ReadonlyArray<SimplifiedDiffRow> {
   if (addedOrDeletedLines.length === 0) {
     return []
@@ -2223,12 +2243,14 @@ function getModifiedRows(
       beforeData: getDataFromLine(
         deletedLine,
         'oldLineNumber',
-        diffTokensBefore.shift()
+        diffTokensBefore.shift(),
+        showMovedLineIndicators
       ),
       afterData: getDataFromLine(
         addedLine,
         'newLineNumber',
-        diffTokensAfter.shift()
+        diffTokensAfter.shift(),
+        showMovedLineIndicators
       ),
       hunkStartLine,
     })
@@ -2241,7 +2263,12 @@ function getModifiedRows(
 
     output.push({
       type: DiffRowType.Deleted,
-      data: getDataFromLine(line, 'oldLineNumber', diffTokensBefore.shift()),
+      data: getDataFromLine(
+        line,
+        'oldLineNumber',
+        diffTokensBefore.shift(),
+        showMovedLineIndicators
+      ),
       hunkStartLine,
     })
   }
@@ -2252,7 +2279,12 @@ function getModifiedRows(
     // Added line
     output.push({
       type: DiffRowType.Added,
-      data: getDataFromLine(line, 'newLineNumber', diffTokensAfter.shift()),
+      data: getDataFromLine(
+        line,
+        'newLineNumber',
+        diffTokensAfter.shift(),
+        showMovedLineIndicators
+      ),
       hunkStartLine,
     })
   }
@@ -2263,7 +2295,8 @@ function getModifiedRows(
 function getDataFromLine(
   { line, diffLineNumber }: { line: DiffLine; diffLineNumber: number },
   lineToUse: 'oldLineNumber' | 'newLineNumber',
-  diffTokens: ILineTokens | undefined
+  diffTokens: ILineTokens | undefined,
+  showMovedLineIndicators: boolean = true
 ): SimplifiedDiffRowData {
   const lineNumber = forceUnwrap(
     `Expecting ${lineToUse} value for ${line}`,
@@ -2282,7 +2315,7 @@ function getDataFromLine(
     diffLineNumber: line.originalLineNumber,
     noNewLineIndicator: line.noTrailingNewLine,
     tokens,
-    movedStatus: line.movedStatus,
+    movedStatus: showMovedLineIndicators ? line.movedStatus : null,
   }
 }
 
@@ -2333,7 +2366,8 @@ function calcSearchTokens(
   diff: ITextDiff,
   showSideBySideDiffs: boolean,
   searchQuery: string,
-  enableDiffExpansion: boolean
+  enableDiffExpansion: boolean,
+  showMovedLineIndicators: boolean = true
 ): SearchResults | undefined {
   if (searchQuery.length === 0) {
     return undefined
@@ -2341,7 +2375,12 @@ function calcSearchTokens(
 
   const hits = new SearchResults()
   const searchRe = new RegExp(escapeRegExp(searchQuery), 'gi')
-  const rows = getDiffRows(diff, showSideBySideDiffs, enableDiffExpansion)
+  const rows = getDiffRows(
+    diff,
+    showSideBySideDiffs,
+    enableDiffExpansion,
+    showMovedLineIndicators
+  )
 
   for (const [rowNumber, row] of rows.entries()) {
     if (row.type === DiffRowType.Hunk) {

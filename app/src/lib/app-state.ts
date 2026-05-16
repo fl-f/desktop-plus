@@ -302,6 +302,9 @@ export interface IAppState {
   /** Whether we should show the diff minimap */
   readonly showDiffMinimap: boolean
 
+  /** Whether we should show moved line indicators in diffs */
+  readonly showMovedLineIndicators: boolean
+
   /** The user's preferred shell. */
   readonly selectedShell: Shell
 

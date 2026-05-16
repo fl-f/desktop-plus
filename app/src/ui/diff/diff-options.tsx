@@ -18,6 +18,11 @@ interface IDiffOptionsProps {
     hideWhitespaceChanges: boolean
   ) => void
 
+  readonly showMovedLineIndicators: boolean
+  readonly onShowMovedLineIndicatorsChanged: (
+    showMovedLineIndicators: boolean
+  ) => void
+
   readonly showSideBySideDiff: boolean
   readonly onShowSideBySideDiffChanged: (showSideBySideDiff: boolean) => void
 
@@ -88,6 +93,14 @@ export class DiffOptions extends React.Component<
     event: React.FormEvent<HTMLInputElement>
   ) => {
     return this.props.onShowDiffMinimapChanged(event.currentTarget.checked)
+  }
+
+  private onShowMovedLineIndicatorsChanged = (
+    event: React.FormEvent<HTMLInputElement>
+  ) => {
+    return this.props.onShowMovedLineIndicatorsChanged(
+      event.currentTarget.checked
+    )
   }
 
   public render() {
@@ -188,6 +201,19 @@ export class DiffOptions extends React.Component<
             hiding whitespace.
           </p>
         )}
+        <Checkbox
+          value={
+            this.props.showMovedLineIndicators
+              ? CheckboxValue.On
+              : CheckboxValue.Off
+          }
+          onChange={this.onShowMovedLineIndicatorsChanged}
+          label={
+            __DARWIN__
+              ? 'Show Moved Line Indicators'
+              : 'Show moved line indicators'
+          }
+        />
       </fieldset>
     )
   }

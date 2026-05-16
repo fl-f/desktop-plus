@@ -374,10 +374,13 @@ import {
 } from '../error-with-metadata'
 import {
   ShowDiffMinimapDefault,
+  ShowMovedLineIndicatorsDefault,
   ShowSideBySideDiffDefault,
   getShowDiffMinimap,
+  getShowMovedLineIndicators,
   getShowSideBySideDiff,
   setShowDiffMinimap,
+  setShowMovedLineIndicators,
   setShowSideBySideDiff,
 } from '../../ui/lib/diff-mode'
 import {
@@ -672,6 +675,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
   private showCommitAuthorInfo: boolean = showCommitAuthorInfoDefault
   private showSideBySideDiff: boolean = ShowSideBySideDiffDefault
   private showDiffMinimap: boolean = ShowDiffMinimapDefault
+  private showMovedLineIndicators: boolean = ShowMovedLineIndicatorsDefault
 
   private uncommittedChangesStrategy = defaultUncommittedChangesStrategy
 
@@ -1298,6 +1302,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
       hideWhitespaceInPullRequestDiff: this.hideWhitespaceInPullRequestDiff,
       showSideBySideDiff: this.showSideBySideDiff,
       showDiffMinimap: this.showDiffMinimap,
+      showMovedLineIndicators: this.showMovedLineIndicators,
       selectedShell: this.selectedShell,
       repositoryFilterText: this.repositoryFilterText,
       resolvedExternalEditor: this.resolvedExternalEditor,
@@ -2740,6 +2745,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
     )
     this.showSideBySideDiff = getShowSideBySideDiff()
     this.showDiffMinimap = getShowDiffMinimap()
+    this.showMovedLineIndicators = getShowMovedLineIndicators()
 
     this.selectedTheme = getPersistedThemeName()
     // Make sure the persisted theme is applied
@@ -7573,6 +7579,14 @@ export class AppStore extends TypedBaseStore<IAppState> {
     if (showDiffMinimap !== this.showDiffMinimap) {
       setShowDiffMinimap(showDiffMinimap)
       this.showDiffMinimap = showDiffMinimap
+      this.emitUpdate()
+    }
+  }
+
+  public _setShowMovedLineIndicators(showMovedLineIndicators: boolean) {
+    if (showMovedLineIndicators !== this.showMovedLineIndicators) {
+      setShowMovedLineIndicators(showMovedLineIndicators)
+      this.showMovedLineIndicators = showMovedLineIndicators
       this.emitUpdate()
     }
   }

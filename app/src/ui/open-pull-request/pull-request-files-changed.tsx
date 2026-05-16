@@ -50,6 +50,9 @@ interface IPullRequestFilesChangedProps {
   /** Whether we should display the diff minimap. */
   readonly showDiffMinimap: boolean
 
+  /** Whether we should show moved line indicators. */
+  readonly showMovedLineIndicators: boolean
+
   /** Whether we should hide whitespace in diff. */
   readonly hideWhitespaceInDiff: boolean
 
@@ -119,6 +122,14 @@ export class PullRequestFilesChanged extends React.Component<
 
   private onShowDiffMinimapChanged = (showDiffMinimap: boolean) => {
     return this.props.dispatcher.onShowDiffMinimapChanged(showDiffMinimap)
+  }
+
+  private onShowMovedLineIndicatorsChanged = (
+    showMovedLineIndicators: boolean
+  ) => {
+    return this.props.dispatcher.onShowMovedLineIndicatorsChanged(
+      showMovedLineIndicators
+    )
   }
 
   private onDiffOptionsOpened = () => {
@@ -291,6 +302,10 @@ export class PullRequestFilesChanged extends React.Component<
           onShowSideBySideDiffChanged={this.onShowSideBySideDiffChanged}
           showDiffMinimap={showDiffMinimap}
           onShowDiffMinimapChanged={this.onShowDiffMinimapChanged}
+          showMovedLineIndicators={this.props.showMovedLineIndicators}
+          onShowMovedLineIndicatorsChanged={
+            this.onShowMovedLineIndicatorsChanged
+          }
           onDiffOptionsOpened={this.onDiffOptionsOpened}
         />
       </div>
@@ -342,6 +357,7 @@ export class PullRequestFilesChanged extends React.Component<
         hideWhitespaceInDiff={hideWhitespaceInDiff}
         showSideBySideDiff={showSideBySideDiff}
         showDiffMinimap={this.props.showDiffMinimap}
+        showMovedLineIndicators={this.props.showMovedLineIndicators}
         showDiffCheckMarks={false}
         onOpenBinaryFile={this.onOpenBinaryFile}
         onChangeImageDiffType={this.onChangeImageDiffType}
