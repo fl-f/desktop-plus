@@ -140,10 +140,15 @@ export function commitGraph_buildRows(
       if (useBackgroundForUnseededLanes) {
         color = commitGraph_BackgroundColor
       } else {
+        let attempts = 0
         do {
           color = commitGraph_getColor(nextColor)
           nextColor++
-        } while (usedColors.has(color))
+          attempts++
+        } while (
+          usedColors.has(color) &&
+          attempts < commitGraph_Colors.length + 361
+        )
 
         usedColors.add(color)
       }
