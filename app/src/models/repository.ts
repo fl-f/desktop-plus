@@ -78,17 +78,6 @@ export class Repository {
   public get resolvedGitDir(): string {
     return this.gitDir ?? Path.join(this.path, '.git')
   }
-
-  /**
-   * Resolve a path relative to the .git directory, similar to
-   * `git rev-parse --git-path`.
-   *
-   * Example: `repository.gitPath('FETCH_HEAD')` returns the absolute
-   * path to the FETCH_HEAD file for this repository.
-   */
-  public gitPath(...segments: string[]): string {
-    return Path.join(this.resolvedGitDir, ...segments)
-  }
 }
 
 /** Identical to `Repository`, except it **must** have a `gitHubRepository` */
