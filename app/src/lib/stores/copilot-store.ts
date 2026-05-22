@@ -38,6 +38,7 @@ import { randomBytes } from 'crypto'
 import { BaseStore } from './base-store'
 import { IRepoRulesMetadataRule } from '../../models/repo-rules'
 import { pathExists } from '../path-exists'
+import { enableCopilotSdkCommitMessageGeneration } from '../feature-flag'
 
 /** The default model ID used for Copilot commit message generation. */
 export const DefaultCopilotModel = 'gpt-5-mini'
@@ -825,7 +826,10 @@ export class CopilotStore extends BaseStore {
    * would mean Copilot legitimately reports no models.
    */
   public async listModels(): Promise<ReadonlyArray<ModelInfo> | null> {
-    if (this.currentAccount === null) {
+    if (
+      this.currentAccount === null ||
+      !enableCopilotSdkCommitMessageGeneration(this.currentAccount)
+    ) {
       return null
     }
 
