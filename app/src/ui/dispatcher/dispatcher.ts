@@ -2449,6 +2449,8 @@ export class Dispatcher {
         return this.stashChanges(retryAction.repository, retryAction.files)
       case RetryActionType.ResetAndPull:
         return this.resetAndPull(retryAction.repository)
+      case RetryActionType.PopStash:
+        return this.popStash(retryAction.repository, retryAction.stashEntry)
       default:
         return assertNever(retryAction, `Unknown retry action: ${retryAction}`)
     }
