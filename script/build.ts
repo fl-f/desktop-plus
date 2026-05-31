@@ -352,7 +352,7 @@ function copyDependencies() {
     { recursive: true, verbatimSymlinks: true }
   )
 
-  if (isNonProductionRelease) {
+  if (isNonProductionRelease || isGitHubDesktopPlus) {
     console.log('  Copying copilot…')
     const copilotPkgDir = path.resolve(
       projectRoot,
