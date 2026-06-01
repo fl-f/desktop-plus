@@ -6303,10 +6303,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
     )
 
     const gitStore = this.gitStoreCache.get(repository)
-    await gitStore.performFailableOperation(() =>
-      addRemote(repository, 'origin', apiRepository.clone_url)
-    )
-    await gitStore.loadRemotes()
+    await gitStore.addRemote('origin', apiRepository.clone_url)
 
     // skip pushing if the current branch is a detached HEAD or the repository
     // is unborn
