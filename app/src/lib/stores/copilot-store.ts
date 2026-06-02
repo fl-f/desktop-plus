@@ -344,13 +344,9 @@ export function getSupportedReasoningEffort(
   const supported = model.supportedReasoningEfforts as
     | ReadonlyArray<ReasoningEffort>
     | undefined
-  if (!supported || supported.length === 0) {
-    return undefined
-  }
-  if (supported.includes(preferred)) {
-    return preferred
-  }
-  return ReasoningEffortOrder.find(e => supported.includes(e))
+  return supported?.includes(preferred)
+    ? preferred
+    : getLowestReasoningEffort(model)
 }
 
 /**
@@ -654,20 +650,14 @@ export class CopilotStore extends BaseStore {
   }
 
   /**
-   * Resolves a {@link CopilotModelRequest} into the concrete session model
-   * configuration (model id, reasoning effort, optional BYOK provider and
-   * per-request timeout) forwarded to the Copilot SDK's `createSession`.
-   *
-   * When no model is requested (or the requested built-in model can't be
-   * found) it falls back to {@link DefaultCopilotModel} and the supplied
-   * `defaultReasoningEffort`. For built-in models the effort is clamped to one
-   * the model actually supports so we never forward an unsupported value; for
-   * BYOK requests the caller-provided effort (which may be `undefined`) and
-   * timeout are passed through unchanged.
+   * Resolves a {@link CopilotModelRequest} into the concrete session config
+   * (model id, reasoning effort, optional BYOK provider and timeout) used to
+   * resolve conflicts. Built-in models fall back to the preferred default and
+   * have their effort clamped to a supported value; BYOK requests pass through
+   * unchanged.
    */
-  private async resolveSessionModelConfig(
-    request: CopilotModelRequest | null | undefined,
-    defaultReasoningEffort: ReasoningEffort
+  private async resolveConflictModelConfig(
+    request: CopilotModelRequest | null | undefined
   ): Promise<{
     modelId: string
     reasoningEffort: ReasoningEffort | undefined
@@ -693,8 +683,11 @@ export class CopilotStore extends BaseStore {
     return {
       modelId: resolvedModel?.id ?? requestedModelId ?? DefaultCopilotModel,
       reasoningEffort: resolvedModel
-        ? getSupportedReasoningEffort(resolvedModel, defaultReasoningEffort)
-        : defaultReasoningEffort,
+        ? getSupportedReasoningEffort(
+            resolvedModel,
+            DefaultConflictResolutionReasoningEffort
+          )
+        : DefaultConflictResolutionReasoningEffort,
       provider: undefined,
       timeoutMs: undefined,
     }
@@ -734,10 +727,7 @@ export class CopilotStore extends BaseStore {
 
     onProgress?.({ filesResolved: 0, filesTotal })
 
-    const modelConfig = await this.resolveSessionModelConfig(
-      request,
-      DefaultConflictResolutionReasoningEffort
-    )
+    const modelConfig = await this.resolveConflictModelConfig(request)
 
     const clientTimer = startTimer('createClient')
     const client = await this.createClient(repositoryPath)

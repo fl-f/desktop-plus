@@ -147,6 +147,7 @@ export class CopilotPreferences extends React.Component<
           </p>
         </Row>
         {this.renderFeatureModelPicker(
+          copilotModels,
           'commit-message-generation',
           __DARWIN__
             ? 'Commit Message Generation'
@@ -160,6 +161,7 @@ export class CopilotPreferences extends React.Component<
         )}
         {enableCopilotConflictResolution() &&
           this.renderFeatureModelPicker(
+            copilotModels,
             'conflict-resolution',
             __DARWIN__ ? 'Conflict Resolution' : 'Conflict resolution',
             this.onConflictResolutionModelChanged
@@ -169,16 +171,13 @@ export class CopilotPreferences extends React.Component<
   }
 
   private renderFeatureModelPicker(
+    copilotModels: ReadonlyArray<ModelInfo>,
     feature: CopilotFeature,
     label: string,
     onChange: (event: React.FormEvent<HTMLSelectElement>) => void,
     description?: JSX.Element
-  ): JSX.Element | null {
-    const { copilotModels, byokProviders, selectedCopilotModels } = this.props
-
-    if (copilotModels === null) {
-      return null
-    }
+  ): JSX.Element {
+    const { byokProviders, selectedCopilotModels } = this.props
 
     const rawSelection = selectedCopilotModels[feature] ?? null
     const value = this.resolveSelectionValue(

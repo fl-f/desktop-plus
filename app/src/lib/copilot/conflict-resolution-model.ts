@@ -7,11 +7,7 @@ import {
 } from '../stores/copilot-store'
 import { IBYOKProvider, parseModelKey } from './byok'
 
-/**
- * Friendly fallback name used when the Copilot model list hasn't loaded yet
- * (or is empty) so the loading dialog still shows a meaningful label. Matches
- * the display name of the default Copilot model (`gpt-5-mini`).
- */
+/** Fallback name shown before the Copilot model list has loaded. */
 const DefaultCopilotModelName = 'GPT-5 mini'
 
 /** The model name and reasoning effort to display for conflict resolution. */
@@ -21,18 +17,11 @@ export interface IConflictResolutionModelDisplay {
 }
 
 /**
- * Resolves the stored `conflict-resolution` model selection into the
- * human-readable model name and reasoning effort that will actually be used
- * when resolving conflicts with Copilot.
- *
- * This mirrors `CopilotStore.resolveSessionModelConfig` /
- * `AppStore.resolveCopilotModelRequest` so the loading dialog's header
- * accurately reflects the model the engine will use:
- *  - BYOK selections show the configured model name and its reasoning effort.
- *  - Built-in selections show the model's name and an effort clamped to one the
- *    model supports (preferring the conflict-resolution default).
- *  - When nothing is selected (or the selection can't be resolved) it falls
- *    back to the preferred default model and the default reasoning effort.
+ * Resolves the stored `conflict-resolution` selection into the model name and
+ * reasoning effort the engine will actually use, so the loading dialog header
+ * matches. Mirrors `resolveConflictModelConfig`/`resolveCopilotModelRequest`:
+ * BYOK passes through, built-in clamps the effort and falls back to the default
+ * model, and the name is normalized for display.
  */
 export function getConflictResolutionModelDisplay(
   selection: string | null,
@@ -45,59 +34,43 @@ export function getConflictResolutionModelDisplay(
     const provider = byokProviders.find(p => p.id === key.providerId)
     const model = provider?.models.find(m => m.id === key.modelId)
     if (model !== undefined) {
-      return buildDisplay(model.name, model.reasoningEffort)
+      return {
+        modelName: cleanModelName(model.name),
+        reasoningEffort: model.reasoningEffort,
+      }
     }
-    // Selection points at a deleted provider/model; fall back to the default
-    // built-in model below, matching the engine's resolution behaviour.
+    // Deleted provider/model — fall back to the default built-in model below.
   }
 
   const requestedModelId =
     key?.kind === 'copilot' && key.modelId !== '' ? key.modelId : null
-
   const models = copilotModels ?? []
   const resolvedModel = requestedModelId
     ? models.find(m => m.id === requestedModelId) ?? null
     : getPreferredDefaultModel(models)
 
   if (resolvedModel !== null) {
-    return buildDisplay(
-      resolvedModel.name,
-      getSupportedReasoningEffort(
+    return {
+      modelName: cleanModelName(resolvedModel.name),
+      reasoningEffort: getSupportedReasoningEffort(
         resolvedModel,
         DefaultConflictResolutionReasoningEffort
-      )
-    )
+      ),
+    }
   }
 
-  // No model metadata is available (the list hasn't loaded, or the selection
-  // points at a model that's no longer offered). Mirror the engine's fallback:
-  // use the explicitly requested model id when there is one, otherwise the
-  // default model name, paired with the default reasoning effort.
-  return buildDisplay(
-    requestedModelId ?? DefaultCopilotModelName,
-    DefaultConflictResolutionReasoningEffort
-  )
+  // Metadata unavailable (list not loaded, or selection no longer offered):
+  // mirror the engine's fallback to the requested id or the default model.
+  return {
+    modelName: requestedModelId ?? DefaultCopilotModelName,
+    reasoningEffort: DefaultConflictResolutionReasoningEffort,
+  }
 }
 
 /**
- * Builds the display info, normalizing the model name so every model renders
- * consistently as "Name · Effort". Some Copilot models embed the reasoning
- * level in their name, e.g. "Claude Opus 4.7 (High reasoning)(Internal only)" —
- * the reasoning parenthetical is stripped so the effort isn't duplicated, while
- * other markers like "(Internal only)" are preserved.
- */
-function buildDisplay(
-  modelName: string,
-  reasoningEffort: ReasoningEffort | undefined
-): IConflictResolutionModelDisplay {
-  return { modelName: cleanModelName(modelName), reasoningEffort }
-}
-
-/**
- * Removes the redundant parenthetical "(... reasoning ...)" marker from a model
- * name (its reasoning level is shown separately) and collapses the resulting
- * whitespace. Other parentheticals (e.g. "(Internal only)" or version tags)
- * are left untouched.
+ * Strips the redundant "(... reasoning ...)" marker from a model name (the
+ * effort is shown separately) while preserving other markers like
+ * "(Internal only)".
  */
 function cleanModelName(name: string): string {
   return name
