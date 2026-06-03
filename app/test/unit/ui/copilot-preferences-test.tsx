@@ -162,9 +162,9 @@ describe('CopilotPreferences', () => {
 
     fireEvent.click(getModelPickerButton(view.container))
 
-    await waitFor(() => assert.ok(screen.getByText('Claude Sonnet')))
+    await waitFor(() => assert.ok(screen.getByText('Claude Sonnet (2x)')))
     assert.ok(screen.getByText('GitHub Copilot'))
-    assert.ok(screen.getAllByText('GPT-5 mini (default)').length >= 2)
+    assert.ok(screen.getAllByText('GPT-5 mini (1x) (default)').length >= 2)
   })
 
   it('renders a BYOK group per provider', async () => {
@@ -182,7 +182,9 @@ describe('CopilotPreferences', () => {
     const view = render(<CopilotPreferences {...defaults()} />)
 
     assert.ok(
-      getModelPickerButtonText(view.container).includes('GPT-5 mini (default)')
+      getModelPickerButtonText(view.container).includes(
+        'GPT-5 mini (1x) (default)'
+      )
     )
     assert.ok(
       !getModelPickerButtonText(view.container).includes('GitHub Copilot')
@@ -198,7 +200,7 @@ describe('CopilotPreferences', () => {
     )
 
     assert.ok(
-      getModelPickerButtonText(view.container).includes('Claude Sonnet')
+      getModelPickerButtonText(view.container).includes('Claude Sonnet (2x)')
     )
   })
 
@@ -234,8 +236,8 @@ describe('CopilotPreferences', () => {
     )
 
     fireEvent.click(getModelPickerButton(view.container))
-    await waitFor(() => assert.ok(screen.getByText('Claude Sonnet')))
-    fireEvent.click(screen.getByText('Claude Sonnet'))
+    await waitFor(() => assert.ok(screen.getByText('Claude Sonnet (2x)')))
+    fireEvent.click(screen.getByText('Claude Sonnet (2x)'))
 
     assert.deepStrictEqual(changed, [
       {
@@ -258,8 +260,10 @@ describe('CopilotPreferences', () => {
     )
 
     fireEvent.click(getModelPickerButton(view.container))
-    await waitFor(() => assert.ok(screen.getByText('GPT-5 mini (default)')))
-    fireEvent.click(screen.getByText('GPT-5 mini (default)'))
+    await waitFor(() =>
+      assert.ok(screen.getByText('GPT-5 mini (1x) (default)'))
+    )
+    fireEvent.click(screen.getByText('GPT-5 mini (1x) (default)'))
 
     assert.deepStrictEqual(changed, [
       {
@@ -283,7 +287,9 @@ describe('CopilotPreferences', () => {
     )
 
     assert.ok(
-      getModelPickerButtonText(view.container).includes('GPT-5 mini (default)')
+      getModelPickerButtonText(view.container).includes(
+        'GPT-5 mini (1x) (default)'
+      )
     )
   })
 
@@ -302,7 +308,9 @@ describe('CopilotPreferences', () => {
     )
 
     assert.ok(
-      getModelPickerButtonText(view.container).includes('GPT-5 mini (default)')
+      getModelPickerButtonText(view.container).includes(
+        'GPT-5 mini (1x) (default)'
+      )
     )
   })
 
@@ -319,7 +327,7 @@ describe('CopilotPreferences', () => {
     )
 
     assert.ok(
-      getModelPickerButtonText(view.container).includes('Claude Sonnet')
+      getModelPickerButtonText(view.container).includes('Claude Sonnet (2x)')
     )
   })
 

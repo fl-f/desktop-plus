@@ -26,11 +26,19 @@ interface ICopilotModelListItem extends IFilterListItem {
   readonly text: ReadonlyArray<string>
   readonly value: string
   readonly name: string
+  readonly billingMultiplier: number | undefined
   readonly isDefault: boolean
 }
 
-const getCopilotModelLabel = (item: ICopilotModelListItem) =>
-  item.isDefault ? `${item.name} (default)` : item.name
+const getBillingLabel = (item: ICopilotModelListItem) =>
+  item.billingMultiplier === undefined ? '' : ` (${item.billingMultiplier}x)`
+
+const getCopilotModelLabel = (item: ICopilotModelListItem) => {
+  const billingLabel = getBillingLabel(item)
+  return item.isDefault
+    ? `${item.name}${billingLabel} (default)`
+    : `${item.name}${billingLabel}`
+}
 
 const getCopilotModelGroups = (
   copilotModels: ReadonlyArray<ModelInfo>,
@@ -54,6 +62,7 @@ const getCopilotModelGroups = (
           text: [model.name, model.id, providerName],
           value,
           name: model.name,
+          billingMultiplier: model.billing?.multiplier,
           isDefault: model.id === DefaultCopilotModel,
         }
       }),
@@ -79,6 +88,7 @@ const getCopilotModelGroups = (
           text: [model.name, model.id, provider.name],
           value,
           name: model.name,
+          billingMultiplier: undefined,
           isDefault: false,
         }
       }),
