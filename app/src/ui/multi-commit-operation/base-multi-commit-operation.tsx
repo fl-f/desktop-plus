@@ -346,6 +346,7 @@ export abstract class BaseMultiCommitOperation extends React.Component<IMultiCom
             workingDirectory={this.props.workingDirectory}
             operationKind={this.props.state.operationDetail.kind}
             copilotResolutions={this.props.state.copilotResolutions}
+            copilotResolutionSummary={this.props.state.copilotResolutionSummary}
             resolvedExternalEditor={this.props.resolvedExternalEditor}
             openFileInExternalEditor={this.props.openFileInExternalEditor}
             onContinueAfterConflicts={this.onContinueAfterConflicts}
