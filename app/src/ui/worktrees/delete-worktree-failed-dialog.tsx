@@ -89,11 +89,11 @@ export class DeleteWorktreeFailedDialog extends React.Component<
     return <p>{e.toString()}</p>
   }
 
-  private onDismissed = async () => {
+  private onDismissed = () => {
     const { originalWorktree, repository } = this.props
 
     if (originalWorktree !== null) {
-      await this.props.onSwitchToWorktree(repository, originalWorktree)
+      this.props.onSwitchToWorktree(repository, originalWorktree)
     }
 
     this.props.onDismissed()
