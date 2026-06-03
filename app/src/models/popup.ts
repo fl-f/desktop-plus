@@ -527,5 +527,6 @@ export type PopupDetail =
       repository: Repository
       worktreePath: string
       error: Error
+      originalWorktreePath: string | null
     }
 export type Popup = IBasePopup & PopupDetail
