@@ -42,13 +42,13 @@ import { Prompts } from './prompts'
 import { Repository } from '../../models/repository'
 import { Notifications } from './notifications'
 import { Accessibility } from './accessibility'
-import type { ModelInfo } from '@github/copilot-sdk'
 import { CopilotPreferences } from './copilot'
 import type {
   CopilotFeature,
   CopilotModelSelections,
 } from '../../lib/stores/copilot-store'
 import type { IBYOKProvider } from '../../lib/copilot/byok'
+import type { CopilotModelInfo } from '../../lib/copilot/model-info'
 import { PopupType } from '../../models/popup'
 import {
   ICustomIntegration,
@@ -114,7 +114,7 @@ interface IPreferencesProps {
   readonly underlineLinks: boolean
   readonly showDiffCheckMarks: boolean
   readonly selectedCopilotModels: CopilotModelSelections
-  readonly copilotModels: ReadonlyArray<ModelInfo> | null
+  readonly copilotModels: ReadonlyArray<CopilotModelInfo> | null
   readonly copilotAvailable: boolean
   readonly byokProviders: ReadonlyArray<IBYOKProvider>
 }

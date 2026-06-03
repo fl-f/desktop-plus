@@ -1,15 +1,19 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert'
-import type { ModelInfo } from '@github/copilot-sdk'
 import {
   DefaultCopilotModel,
   getLowestReasoningEffort,
   getPreferredDefaultModel,
 } from '../../../src/lib/stores/copilot-store'
+import {
+  type CopilotModelInfo,
+  normalizeCopilotModelBilling,
+  normalizeCopilotModelInfo,
+} from '../../../src/lib/copilot/model-info'
 
 function makeModel(
-  overrides: Partial<ModelInfo> & Pick<ModelInfo, 'id' | 'name'>
-): ModelInfo {
+  overrides: Partial<CopilotModelInfo> & Pick<CopilotModelInfo, 'id' | 'name'>
+): CopilotModelInfo {
   return {
     capabilities: {
       supports: { vision: false, reasoningEffort: false },
@@ -80,12 +84,12 @@ describe('getPreferredDefaultModel', () => {
     const defaultModel = makeModel({
       id: DefaultCopilotModel,
       name: 'GPT-5 mini',
-      billing: { multiplier: 1 },
+      billing: { kind: 'premium-requests', multiplier: 1 },
     })
     const other = makeModel({
       id: 'other-model',
       name: 'Other',
-      billing: { multiplier: 0.5 },
+      billing: { kind: 'premium-requests', multiplier: 0.5 },
     })
     // Even though 'other' is cheaper, the default model is preferred
     const result = getPreferredDefaultModel([other, defaultModel])
@@ -96,17 +100,17 @@ describe('getPreferredDefaultModel', () => {
     const expensive = makeModel({
       id: 'expensive',
       name: 'Expensive',
-      billing: { multiplier: 10 },
+      billing: { kind: 'premium-requests', multiplier: 10 },
     })
     const cheap = makeModel({
       id: 'cheap',
       name: 'Cheap',
-      billing: { multiplier: 0.1 },
+      billing: { kind: 'premium-requests', multiplier: 0.1 },
     })
     const mid = makeModel({
       id: 'mid',
       name: 'Mid',
-      billing: { multiplier: 2 },
+      billing: { kind: 'premium-requests', multiplier: 2 },
     })
     const result = getPreferredDefaultModel([expensive, mid, cheap])
     assert.strictEqual(result, cheap)
@@ -120,7 +124,7 @@ describe('getPreferredDefaultModel', () => {
     const withBilling = makeModel({
       id: 'with-billing',
       name: 'With Billing',
-      billing: { multiplier: 5 },
+      billing: { kind: 'premium-requests', multiplier: 5 },
     })
     const result = getPreferredDefaultModel([noBilling, withBilling])
     assert.strictEqual(result, withBilling)
@@ -130,7 +134,7 @@ describe('getPreferredDefaultModel', () => {
     const only = makeModel({
       id: 'only-model',
       name: 'Only Model',
-      billing: { multiplier: 3 },
+      billing: { kind: 'premium-requests', multiplier: 3 },
     })
     const result = getPreferredDefaultModel([only])
     assert.strictEqual(result, only)
@@ -140,14 +144,99 @@ describe('getPreferredDefaultModel', () => {
     const defaultModel = makeModel({
       id: DefaultCopilotModel,
       name: 'GPT-5 mini',
-      billing: { multiplier: 100 },
+      billing: { kind: 'premium-requests', multiplier: 100 },
     })
     const cheapModel = makeModel({
       id: 'cheap',
       name: 'Cheap',
-      billing: { multiplier: 0.01 },
+      billing: { kind: 'premium-requests', multiplier: 0.01 },
     })
     const result = getPreferredDefaultModel([cheapModel, defaultModel])
     assert.strictEqual(result, defaultModel)
+  })
+
+  it('treats usage billing as unknown premium request cost', () => {
+    const usageBilled = makeModel({
+      id: 'usage-billed',
+      name: 'Usage Billed',
+      billing: {
+        kind: 'usage',
+        token_prices: {
+          batch_size: 1000000,
+          default: {
+            cache_price: 50,
+            context_max: 200000,
+            input_price: 500,
+            output_price: 2500,
+          },
+        },
+      },
+    })
+    const premiumRequestsBilled = makeModel({
+      id: 'premium-requests-billed',
+      name: 'Premium Requests Billed',
+      billing: { kind: 'premium-requests', multiplier: 2 },
+    })
+    const result = getPreferredDefaultModel([
+      usageBilled,
+      premiumRequestsBilled,
+    ])
+    assert.strictEqual(result, premiumRequestsBilled)
+  })
+})
+
+describe('normalizeCopilotModelBilling', () => {
+  it('normalizes SDK multiplier billing to premium requests billing', () => {
+    assert.deepStrictEqual(normalizeCopilotModelBilling({ multiplier: 2 }), {
+      kind: 'premium-requests',
+      multiplier: 2,
+    })
+  })
+
+  it('normalizes REST usage billing to usage billing', () => {
+    assert.deepStrictEqual(
+      normalizeCopilotModelBilling({
+        token_prices: {
+          batch_size: 1000000,
+          default: {
+            cache_price: 50,
+            context_max: 200000,
+            input_price: 500,
+            output_price: 2500,
+          },
+          long_context: {
+            cache_price: 50,
+            context_max: 936000,
+            input_price: 500,
+            output_price: 2500,
+          },
+        },
+      }),
+      {
+        kind: 'usage',
+        token_prices: {
+          batch_size: 1000000,
+          default: {
+            cache_price: 50,
+            context_max: 200000,
+            input_price: 500,
+            output_price: 2500,
+          },
+          long_context: {
+            cache_price: 50,
+            context_max: 936000,
+            input_price: 500,
+            output_price: 2500,
+          },
+        },
+      }
+    )
+  })
+
+  it('normalizes model info billing', () => {
+    assert.deepStrictEqual(
+      normalizeCopilotModelInfo(makeModel({ id: 'a', name: 'A' })),
+      makeModel({ id: 'a', name: 'A' })
+    )
   })
 })

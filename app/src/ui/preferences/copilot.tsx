@@ -6,7 +6,6 @@ import { LinkButton } from '../lib/link-button'
 import { Octicon } from '../octicons'
 import * as octicons from '../octicons/octicons.generated'
 import { TabBar } from '../tab-bar'
-import type { ModelInfo } from '@github/copilot-sdk'
 import {
   CopilotModelPicker,
   hasCopilotModelPickerItems,
@@ -22,10 +21,11 @@ import {
   isLocalBaseUrl,
   parseModelKey,
 } from '../../lib/copilot/byok'
+import type { CopilotModelInfo } from '../../lib/copilot/model-info'
 
 interface ICopilotPreferencesProps {
   readonly selectedCopilotModels: CopilotModelSelections
-  readonly copilotModels: ReadonlyArray<ModelInfo> | null
+  readonly copilotModels: ReadonlyArray<CopilotModelInfo> | null
   readonly copilotAvailable: boolean
   readonly byokProviders: ReadonlyArray<IBYOKProvider>
   readonly showBYOKSettings: boolean
@@ -163,7 +163,7 @@ export class CopilotPreferences extends React.Component<
   }
 
   private resolveSelectionValue(
-    copilotModels: ReadonlyArray<ModelInfo>,
+    copilotModels: ReadonlyArray<CopilotModelInfo>,
     byokProviders: ReadonlyArray<IBYOKProvider>,
     raw: string | null
   ): string {
@@ -186,7 +186,7 @@ export class CopilotPreferences extends React.Component<
   }
 
   private getFirstSelectableModelValue(
-    copilotModels: ReadonlyArray<ModelInfo>,
+    copilotModels: ReadonlyArray<CopilotModelInfo>,
     byokProviders: ReadonlyArray<IBYOKProvider>
   ): string {
     if (copilotModels.length === 0 && byokProviders.length === 0) {

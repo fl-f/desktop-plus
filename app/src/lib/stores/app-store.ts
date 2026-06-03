@@ -154,7 +154,7 @@ import {
   ICompareState,
   CommitOptions,
 } from '../app-state'
-import type { ModelInfo } from '@github/copilot-sdk'
+import type { CopilotModelInfo } from '../copilot/model-info'
 import {
   findEditorOrDefault,
   getAvailableEditors,
@@ -687,7 +687,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
   private showChangesFilter: boolean = false
 
   private selectedCopilotModels: CopilotModelSelections = {}
-  private copilotModels: ReadonlyArray<ModelInfo> | null = null
+  private copilotModels: ReadonlyArray<CopilotModelInfo> | null = null
   private byokProviders: ReadonlyArray<IBYOKProvider> = []
 
   public constructor(

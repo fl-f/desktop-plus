@@ -1,16 +1,19 @@
 import * as React from 'react'
-import type { ModelInfo } from '@github/copilot-sdk'
 import memoizeOne from 'memoize-one'
 
 import { DefaultCopilotModel } from '../../lib/stores/copilot-store'
 import { type IBYOKProvider, encodeModelKey } from '../../lib/copilot/byok'
+import {
+  type CopilotModelInfo,
+  getCopilotModelBillingMultiplier,
+} from '../../lib/copilot/model-info'
 import { IFilterListGroup, IFilterListItem } from './filter-list'
 import { PopoverDropdown } from './popover-dropdown'
 import { SectionFilterList } from './section-filter-list'
 
 interface ICopilotModelPickerProps {
   readonly label: string
-  readonly copilotModels: ReadonlyArray<ModelInfo>
+  readonly copilotModels: ReadonlyArray<CopilotModelInfo>
   readonly byokProviders: ReadonlyArray<IBYOKProvider>
   readonly value: string
   readonly onChange: (value: string) => void
@@ -41,7 +44,7 @@ const getCopilotModelLabel = (item: ICopilotModelListItem) => {
 }
 
 const getCopilotModelGroups = (
-  copilotModels: ReadonlyArray<ModelInfo>,
+  copilotModels: ReadonlyArray<CopilotModelInfo>,
   byokProviders: ReadonlyArray<IBYOKProvider>
 ): ReadonlyArray<IFilterListGroup<ICopilotModelListItem>> => {
   const groups = new Array<IFilterListGroup<ICopilotModelListItem>>()
@@ -62,7 +65,7 @@ const getCopilotModelGroups = (
           text: [model.name, model.id, providerName],
           value,
           name: model.name,
-          billingMultiplier: model.billing?.multiplier,
+          billingMultiplier: getCopilotModelBillingMultiplier(model.billing),
           isDefault: model.id === DefaultCopilotModel,
         }
       }),
@@ -99,7 +102,7 @@ const getCopilotModelGroups = (
 }
 
 export const hasCopilotModelPickerItems = (
-  copilotModels: ReadonlyArray<ModelInfo>,
+  copilotModels: ReadonlyArray<CopilotModelInfo>,
   byokProviders: ReadonlyArray<IBYOKProvider>
 ) =>
   copilotModels.length > 0 ||

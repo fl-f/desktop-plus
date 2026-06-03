@@ -7,15 +7,15 @@ import {
   DefaultCopilotModel,
   type CopilotFeature,
 } from '../../../src/lib/stores/copilot-store'
-import type { ModelInfo } from '@github/copilot-sdk'
 import {
   encodeModelKey,
   type IBYOKProvider,
 } from '../../../src/lib/copilot/byok'
+import type { CopilotModelInfo } from '../../../src/lib/copilot/model-info'
 
 function makeModel(
-  overrides: Partial<ModelInfo> & Pick<ModelInfo, 'id' | 'name'>
-): ModelInfo {
+  overrides: Partial<CopilotModelInfo> & Pick<CopilotModelInfo, 'id' | 'name'>
+): CopilotModelInfo {
   return {
     capabilities: {
       supports: { vision: false, reasoningEffort: false },
@@ -28,16 +28,37 @@ function makeModel(
 const defaultModel = makeModel({
   id: DefaultCopilotModel,
   name: 'GPT-5 mini',
-  billing: { multiplier: 1 },
+  billing: { kind: 'premium-requests', multiplier: 1 },
 })
 
 const otherModel = makeModel({
   id: 'claude-sonnet',
   name: 'Claude Sonnet',
-  billing: { multiplier: 2 },
+  billing: { kind: 'premium-requests', multiplier: 2 },
 })
 
-const models: ReadonlyArray<ModelInfo> = [defaultModel, otherModel]
+const usageBilledModel = makeModel({
+  id: 'usage-billed-model',
+  name: 'Usage Billed Model',
+  billing: {
+    kind: 'usage',
+    token_prices: {
+      batch_size: 1000000,
+      default: {
+        cache_price: 50,
+        context_max: 200000,
+        input_price: 500,
+        output_price: 2500,
+      },
+    },
+  },
+})
+
+const models: ReadonlyArray<CopilotModelInfo> = [
+  defaultModel,
+  otherModel,
+  usageBilledModel,
+]
 
 const ollamaProvider: IBYOKProvider = {
   id: 'ollama-id',
@@ -165,6 +186,7 @@ describe('CopilotPreferences', () => {
     await waitFor(() => assert.ok(screen.getByText('Claude Sonnet (2x)')))
     assert.ok(screen.getByText('GitHub Copilot'))
     assert.ok(screen.getAllByText('GPT-5 mini (1x) (default)').length >= 2)
+    assert.ok(screen.getByText('Usage Billed Model'))
   })
 
   it('renders a BYOK group per provider', async () => {

@@ -2,7 +2,6 @@ import { CopilotClient, CopilotSession } from '@github/copilot-sdk'
 import type {
   AssistantMessageEvent,
   MessageOptions,
-  ModelInfo,
   SessionConfig,
 } from '@github/copilot-sdk'
 import { AccountsStore } from './accounts-store'
@@ -40,6 +39,11 @@ import { BaseStore } from './base-store'
 import { IRepoRulesMetadataRule } from '../../models/repo-rules'
 import { pathExists } from '../path-exists'
 import { enableCopilotSdkCommitMessageGeneration } from '../feature-flag'
+import {
+  type CopilotModelInfo,
+  getCopilotModelBillingMultiplier,
+  normalizeCopilotModelInfo,
+} from '../copilot/model-info'
 
 /** The default model ID used for Copilot commit message generation. */
 export const DefaultCopilotModel = 'gpt-5-mini'
@@ -311,7 +315,7 @@ export type ReasoningEffort = typeof ReasoningEffortOrder[number]
  * undefined if the model does not support reasoning effort configuration.
  */
 export function getLowestReasoningEffort(
-  model: ModelInfo
+  model: CopilotModelInfo
 ): ReasoningEffort | undefined {
   const supported = model.supportedReasoningEfforts as
     | ReadonlyArray<ReasoningEffort>
@@ -325,13 +329,13 @@ export function getLowestReasoningEffort(
 /**
  * Selects the model to use for commit message generation. Prefers
  * `DefaultCopilotModel` if it is in the list; otherwise falls back to the
- * cheapest available model by billing multiplier.
+ * cheapest available model by premium request billing multiplier.
  *
  * Returns null if the model list is empty.
  */
 export function getPreferredDefaultModel(
-  models: ReadonlyArray<ModelInfo>
-): ModelInfo | null {
+  models: ReadonlyArray<CopilotModelInfo>
+): CopilotModelInfo | null {
   if (models.length === 0) {
     return null
   }
@@ -341,12 +345,13 @@ export function getPreferredDefaultModel(
     return defaultModel
   }
 
-  // Default model unavailable — pick the cheapest one. Models without billing
-  // info are treated as most expensive (unknown cost) so we don't accidentally
-  // pick a costly model.
+  // Default model unavailable — pick the cheapest one. Models without a
+  // premium request multiplier are treated as most expensive (unknown cost) so
+  // we don't accidentally pick a costly model.
   return [...models].sort(
     (a, b) =>
-      (a.billing?.multiplier ?? Infinity) - (b.billing?.multiplier ?? Infinity)
+      (getCopilotModelBillingMultiplier(a.billing) ?? Infinity) -
+      (getCopilotModelBillingMultiplier(b.billing) ?? Infinity)
   )[0]
 }
 
@@ -360,9 +365,10 @@ export function getPreferredDefaultModel(
 export class CopilotStore extends BaseStore {
   private currentAccount: Account | null = null
 
-  private cachedModels: ReadonlyArray<ModelInfo> | null = null
+  private cachedModels: ReadonlyArray<CopilotModelInfo> | null = null
   private modelsCachedAt: number = 0
-  private modelsInFlight: Promise<ReadonlyArray<ModelInfo> | null> | null = null
+  private modelsInFlight: Promise<ReadonlyArray<CopilotModelInfo> | null> | null =
+    null
 
   public constructor(private readonly accountsStore: AccountsStore) {
     super()
@@ -994,7 +1000,7 @@ export class CopilotStore extends BaseStore {
    * Returns the last-fetched model list without triggering a refresh.
    * Null if models have never been fetched.
    */
-  public get cachedModelList(): ReadonlyArray<ModelInfo> | null {
+  public get cachedModelList(): ReadonlyArray<CopilotModelInfo> | null {
     return this.cachedModels
   }
 
@@ -1007,7 +1013,7 @@ export class CopilotStore extends BaseStore {
    * cache). Callers should distinguish this from an empty array, which
    * would mean Copilot legitimately reports no models.
    */
-  public async listModels(): Promise<ReadonlyArray<ModelInfo> | null> {
+  public async listModels(): Promise<ReadonlyArray<CopilotModelInfo> | null> {
     if (
       this.currentAccount === null ||
       !enableCopilotSdkCommitMessageGeneration(this.currentAccount)
@@ -1031,11 +1037,11 @@ export class CopilotStore extends BaseStore {
    * we know about right now use this entry point and treat "unavailable"
    * the same as "empty list".
    */
-  private async getCachedModels(): Promise<ReadonlyArray<ModelInfo>> {
+  private async getCachedModels(): Promise<ReadonlyArray<CopilotModelInfo>> {
     return (await this.listModels()) ?? []
   }
 
-  private async fetchAndCacheModels(): Promise<ReadonlyArray<ModelInfo> | null> {
+  private async fetchAndCacheModels(): Promise<ReadonlyArray<CopilotModelInfo> | null> {
     // Deduplicate concurrent fetches — if one is already in flight, reuse it.
     if (this.modelsInFlight !== null) {
       return this.modelsInFlight
@@ -1053,12 +1059,12 @@ export class CopilotStore extends BaseStore {
     }
   }
 
-  private async fetchModels(): Promise<ReadonlyArray<ModelInfo> | null> {
+  private async fetchModels(): Promise<ReadonlyArray<CopilotModelInfo> | null> {
     const client = await this.createClient()
 
     try {
       await client.start()
-      const models = await client.listModels()
+      const models = (await client.listModels()).map(normalizeCopilotModelInfo)
       this.cachedModels = models
       this.modelsCachedAt = Date.now()
       return models
