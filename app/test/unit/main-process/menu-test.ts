@@ -8,7 +8,7 @@ import type { MenuLabelsEvent } from '../../../src/models/menu-labels'
 
 /** Extract the Windows-style access key from a menu item label, if any. */
 function getAccessKey(label: string): string | null {
-  const m = label.match(/&([^&])/)
+  const m = label.match(/(?<!&)&([^&])/)
   return m ? m[1].toLowerCase() : null
 }
 
@@ -132,6 +132,28 @@ describe('main-process menu', () => {
 
       assert.equal(template[0].id, '@.foo')
       assert.equal(template[1].id, '@.foo1')
+    })
+  })
+
+  describe('getAccessKey handles escaped ampersands', () => {
+    it('does not treat && as an access key prefix', () => {
+      // "Save && Upload" has a literal ampersand, no access key
+      assert.equal(getAccessKey('Save && Upload'), null)
+    })
+
+    it('does not treat && at start of word as access key', () => {
+      // "Ben&&Jerrys" has a literal ampersand, no access key
+      assert.equal(getAccessKey('Ben&&Jerrys'), null)
+    })
+
+    it('extracts access key after escaped ampersand', () => {
+      // "Save && &Upload" has a literal ampersand AND an access key 'u'
+      assert.equal(getAccessKey('Save && &Upload'), 'u')
+    })
+
+    it('extracts normal access key correctly', () => {
+      assert.equal(getAccessKey('&File'), 'f')
+      assert.equal(getAccessKey('E&xit'), 'x')
     })
   })
 
