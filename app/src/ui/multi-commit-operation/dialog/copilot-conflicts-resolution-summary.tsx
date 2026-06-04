@@ -65,11 +65,8 @@ export class CopilotConflictsResolutionSummary extends React.Component<ICopilotC
     )
 
     return (
-      <section
-        className="copilot-conflicts-summary"
-        aria-label="Resolution summary"
-      >
-        <header className="copilot-conflicts-summary-header">
+      <div className="copilot-conflicts-summary">
+        <div className="copilot-conflicts-summary-header">
           <h2 className="copilot-conflicts-summary-title">
             <Octicon
               symbol={octicons.copilot}
@@ -78,10 +75,10 @@ export class CopilotConflictsResolutionSummary extends React.Component<ICopilotC
             <span>Resolution summary</span>
           </h2>
           <p className="copilot-conflicts-summary-operation">{phrase}</p>
-        </header>
+        </div>
         {this.renderMarkdownBody()}
         {this.renderReferences()}
-      </section>
+      </div>
     )
   }
 
