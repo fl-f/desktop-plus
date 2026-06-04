@@ -6088,10 +6088,54 @@ export class AppStore extends TypedBaseStore<IAppState> {
     repository: Repository,
     branch: Branch
   ) {
-    console.log(repository, ' repository ')
-    console.log(branch, ' branch ')
+    const remoteName = branch.remoteName
+    const remoteBranchName = branch.nameWithoutRemote
 
-    return
+    if (!remoteName) {
+      throw new Error('Remote name not found')
+    }
+
+    // await git(
+    //   ['fetch', remoteName, remoteBranchName],
+    //   repository.path,
+    //   'pullRemoteBranch'
+    // )
+    const backgroundTask = false
+    const gitStore = this.gitStoreCache.get(repository)
+    const remote = { name: remoteName, url: '' }
+    // const progressCallback = (progress: IFetchProgress) => {
+    //   console.log(progress, ' progress ')
+    // }
+
+    const fetchFn = async () => {
+      await git(
+        [
+          'fetch',
+          // ...(progressCallback ? ['--progress'] : []),
+          '--progress',
+          '--prune',
+          '--recurse-submodules=on-demand',
+          remoteName,
+          remoteBranchName,
+        ],
+        repository.path,
+        'pullRemoteBranch'
+      )
+      return true
+    }
+
+    const fetchSucceeded = await gitStore.performFailableOperation(fetchFn, {
+      backgroundTask,
+    })
+
+    if (fetchSucceeded) {
+      await updateRemoteHEAD(repository, remote, backgroundTask).catch(e =>
+        log.error('Failed updating remote HEAD', e)
+      )
+      await this._refreshRepository(repository)
+    } else {
+      console.error('Fetch did not succeed')
+    }
   }
 
   public async _resetHardToUpstream(repository: Repository): Promise<void> {

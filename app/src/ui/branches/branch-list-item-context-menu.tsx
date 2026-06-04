@@ -43,7 +43,7 @@ export function generateBranchContextMenuItems(
     })
   }
 
-  if (onPullRemoteBranch !== undefined) {
+  if (onPullRemoteBranch !== undefined && !isLocal) {
     items.push({
       label: getRemotePullBranchLabel(),
       action: () => onPullRemoteBranch(name),
