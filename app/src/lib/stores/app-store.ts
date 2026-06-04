@@ -6074,6 +6074,26 @@ export class AppStore extends TypedBaseStore<IAppState> {
     })
   }
 
+  public async _pullRemoteBranch(
+    repository: Repository,
+    branch: Branch
+  ): Promise<void> {
+    return this.withRefreshedGitHubRepository(repository, repo => {
+      return this.performPullRemoteBranch(repo, branch)
+    })
+  }
+
+  /** This shouldn't be called directly. See `Dispatcher`. */
+  private async performPullRemoteBranch(
+    repository: Repository,
+    branch: Branch
+  ) {
+    console.log(repository, ' repository ')
+    console.log(branch, ' branch ')
+
+    return
+  }
+
   public async _resetHardToUpstream(repository: Repository): Promise<void> {
     const { branchesState } = this.repositoryStateCache.get(repository)
     const { tip } = branchesState

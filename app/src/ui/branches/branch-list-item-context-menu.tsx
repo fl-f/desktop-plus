@@ -14,6 +14,7 @@ interface IBranchContextMenuConfig {
   onViewPullRequestOnGitHub?: () => void
   onSetAsDefaultBranch?: (branchName: string) => void
   onDeleteBranch?: (branchName: string) => void
+  onPullRemoteBranch?: (branchName: string) => void
 }
 
 export function generateBranchContextMenuItems(
@@ -30,6 +31,7 @@ export function generateBranchContextMenuItems(
     onViewPullRequestOnGitHub,
     onSetAsDefaultBranch,
     onDeleteBranch,
+    onPullRemoteBranch,
   } = config
   const items = new Array<IMenuItem>()
 
@@ -38,6 +40,14 @@ export function generateBranchContextMenuItems(
       label: 'Rename…',
       action: () => onRenameBranch(name),
       enabled: isLocal,
+    })
+  }
+
+  if (onPullRemoteBranch !== undefined) {
+    items.push({
+      label: getRemotePullBranchLabel(),
+      action: () => onPullRemoteBranch(name),
+      enabled: true,
     })
   }
 
@@ -103,4 +113,18 @@ function getViewPullRequestLabel(repoType: RepoType): string {
     default:
       return assertNever(repoType, `Unknown repo type: ${repoType}`)
   }
+}
+
+function getRemotePullBranchLabel(): string {
+  return 'Pull branch'
+  // switch (repoType) {
+  //   case 'github':
+  //     return 'Pull branch from Github'
+  //   case 'bitbucket':
+  //     return 'Pull branch from Bitbucket'
+  //   case 'gitlab':
+  //     return 'Pull branch from GitLab'
+  //   default:
+  //     return assertNever(repoType, `Unknown repo type: ${repoType}`)
+  // }
 }

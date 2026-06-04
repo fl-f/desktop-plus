@@ -144,6 +144,9 @@ interface IBranchListProps {
 
   /** Optional: Callback for if delete context menu should exist */
   readonly onDeleteBranch?: (branchName: string) => void
+
+  /** Optional: Callback if pull option for remote branch context menu should exist */
+  readonly onPullRemoteBranch?: (branchName: string) => void
 }
 
 /** The Branches list component. */
@@ -234,7 +237,12 @@ export class BranchList extends React.Component<IBranchListProps> {
   ) => {
     event.preventDefault()
 
-    const { onRenameBranch, onDeleteBranch, onSetAsDefaultBranch } = this.props
+    const {
+      onRenameBranch,
+      onDeleteBranch,
+      onSetAsDefaultBranch,
+      onPullRemoteBranch,
+    } = this.props
 
     if (
       onRenameBranch === undefined &&
@@ -260,6 +268,7 @@ export class BranchList extends React.Component<IBranchListProps> {
           ? undefined
           : onSetAsDefaultBranch,
       onDeleteBranch,
+      onPullRemoteBranch,
     })
 
     showContextualMenu(items)
