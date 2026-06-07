@@ -10,6 +10,7 @@ import { TabBar } from '../tab-bar'
 import type { ModelInfo } from '@github/copilot-sdk'
 import {
   DefaultCopilotModel,
+  DisabledCopilotModel,
   type CopilotFeature,
   type CopilotModelSelections,
 } from '../../lib/stores/copilot-store'
@@ -159,6 +160,9 @@ export class CopilotPreferences extends React.Component<
           value={value}
           onChange={this.onCommitMessageModelChanged}
         >
+          <option value={DisabledCopilotModel}>
+            None (hide Copilot button)
+          </option>
           {copilotModels.length > 0 && (
             <optgroup label="GitHub Copilot">
               {copilotModels.map(m => (
@@ -204,6 +208,10 @@ export class CopilotPreferences extends React.Component<
     byokProviders: ReadonlyArray<IBYOKProvider>,
     raw: string | null
   ): string {
+    if (raw === DisabledCopilotModel) {
+      return DisabledCopilotModel
+    }
+
     if (raw !== null) {
       const key = parseModelKey(raw)
       if (key.kind === 'byok') {

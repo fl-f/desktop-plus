@@ -5,6 +5,7 @@ import { render, screen, fireEvent } from '../../helpers/ui/render'
 import { CopilotPreferences } from '../../../src/ui/preferences/copilot'
 import {
   DefaultCopilotModel,
+  DisabledCopilotModel,
   type CopilotFeature,
 } from '../../../src/lib/stores/copilot-store'
 import type { ModelInfo } from '@github/copilot-sdk'
@@ -103,8 +104,50 @@ describe('CopilotPreferences', () => {
     assert.strictEqual(optgroups[0].label, 'GitHub Copilot')
 
     const options = view.container.querySelectorAll('option')
-    assert.strictEqual(options[0].textContent, 'GPT-5 mini (default)')
-    assert.strictEqual(options[1].textContent, 'Claude Sonnet')
+    assert.strictEqual(options[0].textContent, 'None (hide Copilot button)')
+    assert.strictEqual(options[1].textContent, 'GPT-5 mini (default)')
+    assert.strictEqual(options[2].textContent, 'Claude Sonnet')
+  })
+
+  it('offers a "None" option to disable commit message generation', () => {
+    const view = render(<CopilotPreferences {...defaults()} />)
+    const options = Array.from(view.container.querySelectorAll('option'))
+    const none = options.find(o => o.value === DisabledCopilotModel)
+    assert.ok(none)
+    assert.strictEqual(none!.textContent, 'None (hide Copilot button)')
+  })
+
+  it('selects the None option when generation is disabled', () => {
+    const view = render(
+      <CopilotPreferences
+        {...defaults()}
+        selectedCopilotModels={{
+          'commit-message-generation': DisabledCopilotModel,
+        }}
+      />
+    )
+    const select = view.container.querySelector('select') as HTMLSelectElement
+    assert.strictEqual(select.value, DisabledCopilotModel)
+  })
+
+  it('emits the None value when generation is disabled', () => {
+    const changed: Array<{ feature: CopilotFeature; model: string | null }> = []
+    const view = render(
+      <CopilotPreferences
+        {...defaults()}
+        onSelectedCopilotModelChanged={(f, m) =>
+          changed.push({ feature: f, model: m })
+        }
+      />
+    )
+    const select = view.container.querySelector('select') as HTMLSelectElement
+    fireEvent.change(select, { target: { value: DisabledCopilotModel } })
+    assert.deepStrictEqual(changed, [
+      {
+        feature: 'commit-message-generation',
+        model: DisabledCopilotModel,
+      },
+    ])
   })
 
   it('renders a BYOK optgroup per provider', () => {

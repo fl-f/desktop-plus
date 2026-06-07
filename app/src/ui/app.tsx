@@ -12,6 +12,7 @@ import {
 } from '../lib/app-state'
 import { Dispatcher } from './dispatcher'
 import { AppStore, GitHubUserStore, IssuesStore } from '../lib/stores'
+import { DisabledCopilotModel } from '../lib/stores/copilot-store'
 import { assertNever } from '../lib/fatal-error'
 import { shell } from '../lib/app-shell'
 import { updateStore, UpdateStatus } from './lib/update-store'
@@ -3990,6 +3991,10 @@ export class App extends React.Component<IAppProps, IAppState> {
           showCompareTab={this.state.showCompareTab}
           shouldShowGenerateCommitMessageCallOut={
             !this.state.commitMessageGenerationButtonClicked
+          }
+          commitMessageGenerationDisabled={
+            this.state.selectedCopilotModels['commit-message-generation'] ===
+            DisabledCopilotModel
           }
           skipCommitHooks={selectedState.state.skipCommitHooks}
           signOffCommits={selectedState.state.signOffCommits}

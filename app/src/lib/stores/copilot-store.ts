@@ -88,6 +88,11 @@ export type CopilotModelRequest =
 export type CopilotFeature = 'commit-message-generation'
 
 /**
+ * Sentinel value for hiding the Copilot button
+ */
+export const DisabledCopilotModel = 'hide-copilot-button'
+
+/**
  * Per-feature model selections. An absent key means the default model
  * will be used for that feature.
  */

@@ -51,6 +51,7 @@ import {
   UpstreamRemoteName,
 } from '.'
 import type { CopilotFeature, CopilotModelSelections } from './copilot-store'
+import { DisabledCopilotModel } from './copilot-store'
 import {
   IBYOKProvider,
   loadBYOKProviders,
@@ -10712,6 +10713,12 @@ export class AppStore extends TypedBaseStore<IAppState> {
     const copilotModels = this.copilotModels
     for (const [feature, raw] of Object.entries(this.selectedCopilotModels)) {
       if (raw === undefined) {
+        continue
+      }
+      // The sentinel that disables a feature isn't a real model, so it would
+      // otherwise be scrubbed as "missing". Preserve it verbatim.
+      if (raw === DisabledCopilotModel) {
+        updated[feature as CopilotFeature] = raw
         continue
       }
       const key = parseModelKey(raw)
