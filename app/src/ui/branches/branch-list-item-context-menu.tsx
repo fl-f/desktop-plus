@@ -15,7 +15,7 @@ interface IBranchContextMenuConfig {
   onViewPullRequestOnGitHub?: () => void
   onSetAsDefaultBranch?: (branchName: string) => void
   onDeleteBranch?: (branchName: string) => void
-  onFetchRemoteOrLocalBranch?: (branchName: string) => void
+  onFetchSingleBranch?: (branchName: string) => void
 }
 
 export function generateBranchContextMenuItems(
@@ -33,7 +33,7 @@ export function generateBranchContextMenuItems(
     onViewPullRequestOnGitHub,
     onSetAsDefaultBranch,
     onDeleteBranch,
-    onFetchRemoteOrLocalBranch,
+    onFetchSingleBranch,
   } = config
   const items = new Array<IMenuItem>()
   if (onRenameBranch !== undefined) {
@@ -71,11 +71,11 @@ export function generateBranchContextMenuItems(
   }
 
   // This should be the selected branch.
-  if (!isCurrentBranch && onFetchRemoteOrLocalBranch !== undefined) {
+  if (!isCurrentBranch && onFetchSingleBranch !== undefined) {
     items.push({ type: 'separator' })
     items.push({
-      label: getRemoteFetchBranchLabel(),
-      action: () => onFetchRemoteOrLocalBranch(name),
+      label: getSingleFetchBranchLabel(),
+      action: () => onFetchSingleBranch(name),
       enabled: true,
     })
   }
@@ -118,6 +118,6 @@ function getViewPullRequestLabel(repoType: RepoType): string {
   }
 }
 
-function getRemoteFetchBranchLabel(): string {
+function getSingleFetchBranchLabel(): string {
   return __DARWIN__ ? 'Fetch Branch' : 'Fetch branch'
 }

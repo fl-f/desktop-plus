@@ -146,7 +146,7 @@ interface IBranchListProps {
   readonly onDeleteBranch?: (branchName: string) => void
 
   /** Optional: Callback if pull option for remote branch context menu should exist */
-  readonly onFetchRemoteOrLocalBranch?: (branchName: string) => void
+  readonly onFetchSingleBranch?: (branchName: string) => void
 }
 
 /** The Branches list component. */
@@ -241,7 +241,7 @@ export class BranchList extends React.Component<IBranchListProps> {
       onRenameBranch,
       onDeleteBranch,
       onSetAsDefaultBranch,
-      onFetchRemoteOrLocalBranch,
+      onFetchSingleBranch,
     } = this.props
 
     if (
@@ -268,7 +268,7 @@ export class BranchList extends React.Component<IBranchListProps> {
           ? undefined
           : onSetAsDefaultBranch,
       onDeleteBranch,
-      onFetchRemoteOrLocalBranch,
+      onFetchSingleBranch,
     })
 
     showContextualMenu(items)

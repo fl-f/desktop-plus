@@ -454,7 +454,7 @@ import {
 import { resolveWithin } from '../path'
 import {
   executionOptionsWithProgress,
-  RemoteOrLocalBranchFetchProgressParser,
+  SingleBranchFetchProgressParser,
 } from '../progress'
 import { envForRemoteOperation } from '../git/environment'
 
@@ -6084,17 +6084,17 @@ export class AppStore extends TypedBaseStore<IAppState> {
     })
   }
 
-  public async _fetchRemoteOrLocalBranch(
+  public async _fetchSingleBranch(
     repository: Repository,
     branch: Branch
   ): Promise<void> {
     return this.withRefreshedGitHubRepository(repository, repo => {
-      return this.performFetchRemoteOrLocalBranch(repo, branch)
+      return this.performFetchSingleBranch(repo, branch)
     })
   }
 
   /** This shouldn't be called directly. See `Dispatcher`. */
-  private async performFetchRemoteOrLocalBranch(
+  private async performFetchSingleBranch(
     repository: Repository,
     branch: Branch
   ) {
@@ -6138,7 +6138,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
       }
       opts = await executionOptionsWithProgress(
         { ...opts, trackLFSProgress: true, isBackgroundTask },
-        new RemoteOrLocalBranchFetchProgressParser(),
+        new SingleBranchFetchProgressParser(),
         progress => {
           if (progress.kind === 'context') {
             const text = progress.text
