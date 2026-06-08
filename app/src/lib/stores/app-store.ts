@@ -6211,30 +6211,27 @@ export class AppStore extends TypedBaseStore<IAppState> {
         value: 0,
         remote: remote.name,
       })
-      try {
-        await gitStore.performFailableOperation(
-          async () => {
-            const result = await fetchFn(isRemote)
-            if (
-              !isRemote &&
-              result &&
-              (result.stderr?.includes('rejected') ||
-                result.stderr?.includes('non-fast-forward'))
-            ) {
-              this.emitError(
-                new ErrorWithMetadata(new Error(result.stderr), { repository })
-              )
-            }
 
-            await this._refreshRepository(repository)
-          },
-          {
-            backgroundTask: isBackgroundTask,
+      await gitStore.performFailableOperation(
+        async () => {
+          const result = await fetchFn(isRemote)
+          if (
+            !isRemote &&
+            result &&
+            (result.stderr?.includes('rejected') ||
+              result.stderr?.includes('non-fast-forward'))
+          ) {
+            this.emitError(
+              new ErrorWithMetadata(new Error(result.stderr), { repository })
+            )
           }
-        )
-      } finally {
-        this.updatePushPullFetchProgress(repository, null)
-      }
+
+          await this._refreshRepository(repository)
+        },
+        {
+          backgroundTask: isBackgroundTask,
+        }
+      )
     }
 
     try {
@@ -6244,6 +6241,8 @@ export class AppStore extends TypedBaseStore<IAppState> {
         repository,
       })
       this.emitError(errorWithMetadata)
+    } finally {
+      this.updatePushPullFetchProgress(repository, null)
     }
   }
 
