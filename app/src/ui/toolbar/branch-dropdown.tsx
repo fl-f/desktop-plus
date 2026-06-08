@@ -118,7 +118,7 @@ export class BranchDropdown extends React.Component<IBranchDropdownProps> {
         branchSortOrder={this.props.branchSortOrder}
         emoji={this.props.emoji}
         onDeleteBranch={this.onDeleteBranch}
-        onFetchSingleBranch={this.onFetchSingleBranch}
+        onPullSingleBranch={this.onPullSingleBranch}
         onRenameBranch={this.onRenameBranch}
         onSetAsDefaultBranch={this.onSetAsDefaultBranch}
         underlineLinks={this.props.underlineLinks}
@@ -321,7 +321,6 @@ export class BranchDropdown extends React.Component<IBranchDropdownProps> {
       name,
       nameWithoutRemote,
       isLocal: type === BranchType.Local,
-      isCurrentBranch: true,
       repoType: this.props.repository.gitHubRepository?.type,
       isInUseByOtherWorktree: false,
       onRenameBranch: this.onRenameBranch,
@@ -445,13 +444,26 @@ export class BranchDropdown extends React.Component<IBranchDropdownProps> {
     })
   }
 
-  private onFetchSingleBranch = (branchName: string) => {
-    const branch = this.getBranchWithName(branchName)
-    if (!branch) {
-      return
-    }
+  private onPullSingleBranch = async (branchName: string) => {
+    try {
+      const tip = this.props.repositoryState.branchesState.tip
+      const currentBranch = tip.kind === TipState.Valid ? tip.branch : null
+      const selectedBranch = this.getBranchWithName(branchName)
+      if (!selectedBranch) {
+        return
+      }
 
-    this.props.dispatcher.fetchSingleBranch(this.props.repository, branch)
+      if (selectedBranch.ref === currentBranch?.ref) {
+        await this.props.dispatcher.pull(this.props.repository)
+      } else {
+        await this.props.dispatcher.fastForwardBranch(
+          this.props.repository,
+          selectedBranch
+        )
+      }
+    } catch (error) {
+      this.props.dispatcher.postError(error)
+    }
   }
 
   private onBadgeClick = () => {

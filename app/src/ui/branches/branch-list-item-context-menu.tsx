@@ -7,7 +7,6 @@ interface IBranchContextMenuConfig {
   name: string
   nameWithoutRemote: string
   isLocal: boolean
-  isCurrentBranch: boolean
   repoType: RepoType | undefined
   isInUseByOtherWorktree: boolean
   onRenameBranch?: (branchName: string) => void
@@ -15,7 +14,7 @@ interface IBranchContextMenuConfig {
   onViewPullRequestOnGitHub?: () => void
   onSetAsDefaultBranch?: (branchName: string) => void
   onDeleteBranch?: (branchName: string) => void
-  onFetchSingleBranch?: (branchName: string) => void
+  onPullSingleBranch?: (branchName: string) => void
 }
 
 export function generateBranchContextMenuItems(
@@ -25,7 +24,6 @@ export function generateBranchContextMenuItems(
     name,
     nameWithoutRemote,
     isLocal,
-    isCurrentBranch,
     repoType,
     isInUseByOtherWorktree,
     onRenameBranch,
@@ -33,9 +31,10 @@ export function generateBranchContextMenuItems(
     onViewPullRequestOnGitHub,
     onSetAsDefaultBranch,
     onDeleteBranch,
-    onFetchSingleBranch,
+    onPullSingleBranch,
   } = config
   const items = new Array<IMenuItem>()
+
   if (onRenameBranch !== undefined) {
     items.push({
       label: 'Rename…',
@@ -70,12 +69,11 @@ export function generateBranchContextMenuItems(
     })
   }
 
-  // This should be the selected branch.
-  if (!isCurrentBranch && onFetchSingleBranch !== undefined) {
+  if (onPullSingleBranch) {
     items.push({ type: 'separator' })
     items.push({
-      label: getSingleFetchBranchLabel(),
-      action: () => onFetchSingleBranch(name),
+      label: __DARWIN__ ? 'Pull branch' : 'Pull branch',
+      action: () => onPullSingleBranch(name),
       enabled: true,
     })
   }
@@ -116,8 +114,4 @@ function getViewPullRequestLabel(repoType: RepoType): string {
     default:
       return assertNever(repoType, `Unknown repo type: ${repoType}`)
   }
-}
-
-function getSingleFetchBranchLabel(): string {
-  return __DARWIN__ ? 'Fetch Branch' : 'Fetch branch'
 }

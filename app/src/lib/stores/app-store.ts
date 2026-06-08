@@ -266,8 +266,6 @@ import {
   listWorktrees,
   unstageAll,
   git,
-  IGitStringExecutionOptions,
-  IGitStringResult,
 } from '../git'
 import {
   installGlobalLFSFilters,
@@ -453,11 +451,6 @@ import {
   gatherCommitContext,
 } from '../copilot-conflict-context'
 import { resolveWithin } from '../path'
-import {
-  executionOptionsWithProgress,
-  SingleBranchFetchProgressParser,
-} from '../progress'
-import { envForRemoteOperation } from '../git/environment'
 
 const LastSelectedRepositoryIDKey = 'last-selected-repository-id'
 
@@ -6082,171 +6075,6 @@ export class AppStore extends TypedBaseStore<IAppState> {
     })
   }
 
-  public async _fetchSingleBranch(
-    repository: Repository,
-    branch: Branch
-  ): Promise<void> {
-    const state = this.repositoryStateCache.get(repository)
-    // Don't allow concurrent network operations.
-    if (state.isPushPullFetchInProgress) {
-      this._showPopup({
-        type: PopupType.Error,
-        error: new Error(
-          'Another push/pull/fetch request is in progress.\nTry again after the ongoing request is finished'
-        ),
-      })
-      return
-    }
-
-    return this.withRefreshedGitHubRepository(repository, repo => {
-      return this.performFetchSingleBranch(repo, branch)
-    })
-  }
-
-  /** This shouldn't be called directly. See `Dispatcher`. */
-  private async performFetchSingleBranch(
-    repository: Repository,
-    branch: Branch
-  ) {
-    const isRemote = branch.type === BranchType.Remote
-
-    const remoteName = isRemote ? branch.remoteName : branch.upstreamRemoteName
-    const remoteBranchName = isRemote
-      ? branch.nameWithoutRemote
-      : branch.upstreamWithoutRemote
-
-    if (!remoteName) {
-      throw new Error('Remote name not found')
-    }
-    if (!remoteBranchName) {
-      throw new Error('Remote branch not found')
-    }
-
-    const isBackgroundTask = false
-    const gitStore = this.gitStoreCache.get(repository)
-
-    // repository.url
-    const remote = { name: remoteName, url: 'file://' }
-
-    const progressCb = (progress: IFetchProgress) => {
-      this.updatePushPullFetchProgress(repository, progress)
-    }
-    const progressTitle = isRemote
-      ? `Fetching ${branch.name}`
-      : `Fetching ${remoteBranchName}`
-    const kind = 'fetch'
-
-    const fetchFn = async (isRemote: boolean): Promise<IGitStringResult> => {
-      let opts: IGitStringExecutionOptions = {
-        successExitCodes: new Set([0]),
-      }
-      if (remote.url) {
-        opts = {
-          ...opts,
-          env: await envForRemoteOperation(remote.url),
-        }
-      }
-      opts = await executionOptionsWithProgress(
-        { ...opts, trackLFSProgress: true, isBackgroundTask },
-        new SingleBranchFetchProgressParser(),
-        progress => {
-          if (progress.kind === 'context') {
-            const text = progress.text
-            if (
-              !text.startsWith('remote: Counting objects') &&
-              !text.startsWith('remote: Compressing objects')
-            ) {
-              return
-            }
-          }
-
-          const description =
-            progress.kind === 'progress' ? progress.details.text : progress.text
-          const value = progress.percent
-
-          progressCb({
-            kind,
-            title: progressTitle,
-            description,
-            value,
-            remote: remote.name,
-          })
-        }
-      )
-      const flags = isRemote
-        ? ['fetch', '--progress', '--recurse-submodules=on-demand', remoteName]
-        : [
-            'fetch',
-            '--progress',
-            '--show-forced-updates',
-            // '--no-write-fetch-head',
-            '--recurse-submodules=on-demand',
-            remoteName,
-          ]
-
-      const branchTarget = isRemote
-        ? remoteBranchName
-        : `${remoteBranchName}:${remoteBranchName}`
-      const actionName = isRemote ? 'fetchRemoteBranch' : 'fetchLocalBranch'
-
-      const executionOpts = isRemote
-        ? opts
-        : {
-            ...opts,
-            successExitCodes: new Set([0, 1]),
-          }
-
-      return await git(
-        [...flags, branchTarget],
-        repository.path,
-        actionName,
-        executionOpts
-      )
-    }
-
-    const execFetchFn = async () => {
-      // Initial progress
-      progressCb({
-        kind,
-        title: progressTitle,
-        value: 0,
-        remote: remote.name,
-      })
-
-      await gitStore.performFailableOperation(
-        async () => {
-          const result = await fetchFn(isRemote)
-          if (
-            !isRemote &&
-            result &&
-            (result.stderr?.includes('rejected') ||
-              result.stderr?.includes('non-fast-forward'))
-          ) {
-            this.emitError(
-              new ErrorWithMetadata(new Error(result.stderr), { repository })
-            )
-          }
-
-          await this._refreshRepository(repository)
-        },
-        {
-          backgroundTask: isBackgroundTask,
-        }
-      )
-    }
-
-    try {
-      await this.withPushPullFetch(repository, execFetchFn)
-    } catch (error) {
-      const errorWithMetadata = new ErrorWithMetadata(error, {
-        repository,
-      })
-      this.emitError(errorWithMetadata)
-    } finally {
-      this.updatePushPullFetchProgress(repository, null)
-    }
-  }
-
   public async _resetHardToUpstream(repository: Repository): Promise<void> {
     const { branchesState } = this.repositoryStateCache.get(repository)
     const { tip } = branchesState
@@ -6776,6 +6604,30 @@ export class AppStore extends TypedBaseStore<IAppState> {
     return this.withRefreshedGitHubRepository(repository, repository => {
       return this.performFetch(repository, fetchType)
     })
+  }
+
+  /**
+   * Attempts to fast-forward a branch to its upstream.
+   *
+   * @returns true if it was successful
+   */
+  public async _fastForwardBranch(
+    repository: Repository,
+    branch: Branch
+  ): Promise<void> {
+    if (branch.upstream === null || branch.isGone) {
+      throw new Error(`The branch '${branch.name}' has not been published yet.`)
+    }
+    await this._fetch(repository, FetchType.UserInitiatedTask)
+    const stillDifferingBranches = await getBranchesDifferingFromUpstream(
+      repository
+    )
+    const stillDiffers = stillDifferingBranches.some(b => b.ref === branch.ref)
+    if (stillDiffers) {
+      throw new Error(
+        `The branch '${branch.name}' cannot be fast-forwarded. Switch to it and pull it manually.`
+      )
+    }
   }
 
   /**

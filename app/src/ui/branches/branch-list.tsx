@@ -145,8 +145,8 @@ interface IBranchListProps {
   /** Optional: Callback for if delete context menu should exist */
   readonly onDeleteBranch?: (branchName: string) => void
 
-  /** Optional: Callback if pull option for remote branch context menu should exist */
-  readonly onFetchSingleBranch?: (branchName: string) => void
+  /** Optional: Callback if option to fetch branches should exist */
+  readonly onPullSingleBranch?: (branchName: string) => void
 }
 
 /** The Branches list component. */
@@ -241,7 +241,7 @@ export class BranchList extends React.Component<IBranchListProps> {
       onRenameBranch,
       onDeleteBranch,
       onSetAsDefaultBranch,
-      onFetchSingleBranch,
+      onPullSingleBranch,
     } = this.props
 
     if (
@@ -255,11 +255,11 @@ export class BranchList extends React.Component<IBranchListProps> {
     const { type, name, nameWithoutRemote } = item.branch
     const isLocal = type === BranchType.Local
     const isInUseByOtherWorktree = !!this.inUseByOtherWorktreeName(item)
+
     const items = generateBranchContextMenuItems({
       name,
       nameWithoutRemote,
       isLocal,
-      isCurrentBranch: item.branch.name === this.props.currentBranch?.name,
       repoType: this.props.repository.gitHubRepository?.type,
       isInUseByOtherWorktree,
       onRenameBranch,
@@ -268,7 +268,7 @@ export class BranchList extends React.Component<IBranchListProps> {
           ? undefined
           : onSetAsDefaultBranch,
       onDeleteBranch,
-      onFetchSingleBranch,
+      onPullSingleBranch,
     })
 
     showContextualMenu(items)

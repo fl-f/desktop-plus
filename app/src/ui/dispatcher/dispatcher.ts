@@ -821,12 +821,11 @@ export class Dispatcher {
     return this.appStore._pull(repository)
   }
 
-  /** Pull remote branch by name */
-  public fetchSingleBranch(
+  public fastForwardBranch(
     repository: Repository,
     branch: Branch
   ): Promise<void> {
-    return this.appStore._fetchSingleBranch(repository, branch)
+    return this.appStore._fastForwardBranch(repository, branch)
   }
 
   public async pullAllRepositories(): Promise<void> {
