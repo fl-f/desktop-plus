@@ -6078,17 +6078,17 @@ export class AppStore extends TypedBaseStore<IAppState> {
     })
   }
 
-  public async _fetchRemoteBranch(
+  public async _fetchRemoteOrLocalBranch(
     repository: Repository,
     branch: Branch
   ): Promise<void> {
     return this.withRefreshedGitHubRepository(repository, repo => {
-      return this.performFetchRemoteBranch(repo, branch)
+      return this.performFetchRemoteOrLocalBranch(repo, branch)
     })
   }
 
   /** This shouldn't be called directly. See `Dispatcher`. */
-  private async performFetchRemoteBranch(
+  private async performFetchRemoteOrLocalBranch(
     repository: Repository,
     branch: Branch
   ) {
@@ -6112,7 +6112,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
     // repository.url
     const remote = { name: remoteName, url: 'file://' }
 
-    const _fetchRemoteBranchProgressCallback = (progress: any) => {
+    const progressCb = (progress: any) => {
       console.log(progress, ' progress ')
     }
 
@@ -6136,6 +6136,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
         // git itself, the stderr output from pull contains information
         // about ref updates. We don't need to bring those into the progress
         // stream so we'll just punt on anything we don't know about for now.
+        console.log(progress, ' progress ')
         if (progress.kind === 'context') {
           if (!progress.text.startsWith('remote: Counting objects')) {
             return
@@ -6146,7 +6147,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
           progress.kind === 'progress' ? progress.details.text : progress.text
         const value = progress.percent
 
-        _fetchRemoteBranchProgressCallback({
+        progressCb({
           kind,
           title,
           description,
@@ -6157,7 +6158,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
     )
 
     // Initial progress
-    _fetchRemoteBranchProgressCallback({
+    progressCb({
       kind,
       title,
       value: 0,
@@ -6200,7 +6201,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
       )
     }
 
-    try {
+    const execFetchFn = async () => {
       await gitStore.performFailableOperation(
         async () => {
           const result = await fetchFn(isRemote, opts)
@@ -6210,20 +6211,26 @@ export class AppStore extends TypedBaseStore<IAppState> {
             (result.stderr?.includes('rejected') ||
               result.stderr?.includes('non-fast-forward'))
           ) {
-            console.error(
-              `[UI/ERROR] Merge conflict/Divergence detected on ${remoteBranchName}.`
+            this.emitError(
+              new ErrorWithMetadata(new Error(result.stderr), { repository })
             )
-
-            this.popupManager.addErrorPopup(new Error(result.stderr))
           }
 
           await this._refreshRepository(repository)
-          console.log(`[UI] Success! ${remoteBranchName} updated cleanly.`)
         },
         {
           backgroundTask: isBackgroundTask,
         }
       )
+    }
+
+    try {
+      await this.withPushPullFetch(repository, execFetchFn)
+    } catch (error) {
+      const errorWithMetadata = new ErrorWithMetadata(error, {
+        repository,
+      })
+      this.emitError(errorWithMetadata)
     } finally {
       console.log(`[UI] Stopping spinner for ${remoteBranchName}.`)
     }

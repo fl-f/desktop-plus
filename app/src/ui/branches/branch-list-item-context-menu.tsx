@@ -6,7 +6,6 @@ import { assertNever } from '../../lib/fatal-error'
 interface IBranchContextMenuConfig {
   name: string
   nameWithoutRemote: string
-  isDefault: boolean
   isLocal: boolean
   isCurrentBranch: boolean
   repoType: RepoType | undefined
@@ -16,7 +15,7 @@ interface IBranchContextMenuConfig {
   onViewPullRequestOnGitHub?: () => void
   onSetAsDefaultBranch?: (branchName: string) => void
   onDeleteBranch?: (branchName: string) => void
-  onFetchRemoteBranch?: (branchName: string) => void
+  onFetchRemoteOrLocalBranch?: (branchName: string) => void
 }
 
 export function generateBranchContextMenuItems(
@@ -26,7 +25,6 @@ export function generateBranchContextMenuItems(
     name,
     nameWithoutRemote,
     isLocal,
-    isDefault,
     isCurrentBranch,
     repoType,
     isInUseByOtherWorktree,
@@ -35,7 +33,7 @@ export function generateBranchContextMenuItems(
     onViewPullRequestOnGitHub,
     onSetAsDefaultBranch,
     onDeleteBranch,
-    onFetchRemoteBranch,
+    onFetchRemoteOrLocalBranch,
   } = config
   const items = new Array<IMenuItem>()
   if (onRenameBranch !== undefined) {
@@ -73,11 +71,11 @@ export function generateBranchContextMenuItems(
   }
 
   // This should be the selected branch.
-  if (!isDefault && !isCurrentBranch && onFetchRemoteBranch !== undefined) {
+  if (!isCurrentBranch && onFetchRemoteOrLocalBranch !== undefined) {
     items.push({ type: 'separator' })
     items.push({
       label: getRemoteFetchBranchLabel(),
-      action: () => onFetchRemoteBranch(name),
+      action: () => onFetchRemoteOrLocalBranch(name),
       enabled: true,
     })
   }

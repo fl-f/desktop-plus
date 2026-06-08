@@ -118,7 +118,7 @@ export class BranchDropdown extends React.Component<IBranchDropdownProps> {
         branchSortOrder={this.props.branchSortOrder}
         emoji={this.props.emoji}
         onDeleteBranch={this.onDeleteBranch}
-        onFetchRemoteBranch={this.onFetchRemoteBranch}
+        onFetchRemoteOrLocalBranch={this.onFetchRemoteOrLocalBranch}
         onRenameBranch={this.onRenameBranch}
         onSetAsDefaultBranch={this.onSetAsDefaultBranch}
         underlineLinks={this.props.underlineLinks}
@@ -317,12 +317,10 @@ export class BranchDropdown extends React.Component<IBranchDropdownProps> {
     }
 
     const { name, type, nameWithoutRemote } = tip.branch
-    const isDefault = nameWithoutRemote === this.props.repository.defaultBranch
     const items = generateBranchContextMenuItems({
       name,
       nameWithoutRemote,
       isLocal: type === BranchType.Local,
-      isDefault,
       isCurrentBranch: true,
       repoType: this.props.repository.gitHubRepository?.type,
       isInUseByOtherWorktree: false,
@@ -335,7 +333,10 @@ export class BranchDropdown extends React.Component<IBranchDropdownProps> {
       onViewPullRequestOnGitHub: this.props.currentPullRequest
         ? this.onViewPullRequestOnGithub
         : undefined,
-      onSetAsDefaultBranch: isDefault ? undefined : this.onSetAsDefaultBranch,
+      onSetAsDefaultBranch:
+        nameWithoutRemote === this.props.repository.defaultBranch
+          ? undefined
+          : this.onSetAsDefaultBranch,
       onDeleteBranch: this.onDeleteBranch,
     })
 
@@ -444,18 +445,16 @@ export class BranchDropdown extends React.Component<IBranchDropdownProps> {
     })
   }
 
-  private onFetchRemoteBranch = (branchName: string) => {
+  private onFetchRemoteOrLocalBranch = (branchName: string) => {
     const branch = this.getBranchWithName(branchName)
-    const { dispatcher, repository } = this.props
-
     if (!branch) {
       return
     }
 
-    // Only fetch remote branch
-    // if (branch.type === BranchType.Remote) {
-    // }
-    dispatcher.fetchRemoteBranch(repository, branch)
+    this.props.dispatcher.fetchRemoteOrLocalBranch(
+      this.props.repository,
+      branch
+    )
   }
 
   private onBadgeClick = () => {
