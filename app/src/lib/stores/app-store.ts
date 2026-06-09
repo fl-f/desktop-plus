@@ -775,6 +775,8 @@ export class AppStore extends TypedBaseStore<IAppState> {
 
   private showChangesFilter: boolean = false
 
+  private overrideProgressTitle: string | null = null
+
   private selectedCopilotModels: CopilotModelSelections = {}
   private copilotModels: ReadonlyArray<ModelInfo> | null = null
   private byokProviders: ReadonlyArray<IBYOKProvider> = []
@@ -5757,6 +5759,13 @@ export class AppStore extends TypedBaseStore<IAppState> {
     repository: Repository,
     pushPullFetchProgress: Progress | null
   ) {
+    if (pushPullFetchProgress && this.overrideProgressTitle) {
+      pushPullFetchProgress = {
+        ...pushPullFetchProgress,
+        title: this.overrideProgressTitle,
+      }
+    }
+
     this.repositoryStateCache.update(repository, () => ({
       pushPullFetchProgress,
     }))
@@ -6618,6 +6627,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
     if (branch.upstream === null || branch.isGone) {
       throw new Error(`The branch '${branch.name}' has not been published yet.`)
     }
+    this.overrideProgressTitle = `Fetching ${branch.name}`
     await this._fetch(repository, FetchType.UserInitiatedTask)
     const stillDifferingBranches = await getBranchesDifferingFromUpstream(
       repository
@@ -6708,6 +6718,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
 
         await this._refreshRepository(repository)
       } finally {
+        this.overrideProgressTitle = null
         this.updatePushPullFetchProgress(repository, null)
 
         if (fetchType === FetchType.UserInitiatedTask) {
