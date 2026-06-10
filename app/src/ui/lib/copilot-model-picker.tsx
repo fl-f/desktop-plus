@@ -469,9 +469,9 @@ export class CopilotModelPicker extends React.Component<
       this.state.selectedItemId,
       this.props.value
     )
-    const buttonItem = this.getItemByValue(groups, this.props.value)
-    const buttonAriaLabel = `${this.props.label}: ${buttonItem?.name ?? 'None'}`
-
+    const buttonAriaLabel = `${this.props.label}: ${
+      buttonItem === undefined ? 'None' : getCopilotModelTitle(buttonItem)
+    }`
     return (
       <PopoverDropdown
         className="copilot-model-picker"
