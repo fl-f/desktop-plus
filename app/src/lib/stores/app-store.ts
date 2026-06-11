@@ -1249,7 +1249,6 @@ export class AppStore extends TypedBaseStore<IAppState> {
       showChangesFilter: this.showChangesFilter,
       selectedCopilotModels: this.selectedCopilotModels,
       copilotModels: this.copilotModels,
-      copilotAvailable: this.getCopilotModelsAccount() !== undefined,
       byokProviders: this.byokProviders,
     }
   }
