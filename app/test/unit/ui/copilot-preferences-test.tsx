@@ -61,9 +61,9 @@ const usageBilledModel = makeModel({
   modelPickerPriceCategory: 'low',
   billing: {
     tokenPrices: {
-      batchSize: 1000000,
+      batchSize: 1500000,
       cachePrice: 20,
-      contextMax: 200000,
+      contextMax: 1436000,
       inputPrice: 200,
       outputPrice: 1200,
     },
@@ -239,6 +239,29 @@ function getListItemHeight(element: HTMLElement): string {
   return row.style.height
 }
 
+function assertElementTextContent(
+  container: HTMLElement,
+  selector: string,
+  textContent: string
+) {
+  const element = Array.from(container.querySelectorAll(selector)).find(
+    candidateElement => candidateElement.textContent === textContent
+  )
+
+  assert.ok(element instanceof HTMLElement)
+}
+
+function getCostDetailsValue(container: HTMLElement, label: string): string {
+  const labelElement = within(container).getByText(label)
+  const row = labelElement.closest('.copilot-model-picker-cost-details-row')
+  assert.ok(row instanceof HTMLElement)
+
+  const valueElement = row.querySelector('dd')
+  assert.ok(valueElement instanceof HTMLElement)
+
+  return valueElement.textContent ?? ''
+}
+
 describe('CopilotPreferences', () => {
   it('shows sign-in message when copilot is not available', () => {
     render(
@@ -378,7 +401,7 @@ describe('CopilotPreferences', () => {
     assert.ok(within(button).getByText('Usage Billed Model'))
     assert.strictEqual(within(button).queryByText(/Use of credits/), null)
     assert.ok(screen.getByText('Lightweight model. Use of credits: low'))
-    assert.strictEqual(screen.queryByText('AI credits per 1M tokens'), null)
+    assert.strictEqual(screen.queryByText(/AI credits per/), null)
     assert.ok(!button.textContent?.includes('low cost'))
 
     const costsButton = screen.getByRole('button', {
@@ -420,10 +443,10 @@ describe('CopilotPreferences', () => {
     assert.ok(within(costsPopover).getByText('Usage Billed Model'))
     assert.ok(within(costsPopover).getByText('Lightweight'))
     assert.ok(within(costsPopover).getByText('Context'))
-    assert.ok(within(costsPopover).getByText('264K'))
+    assert.strictEqual(getCostDetailsValue(costsPopover, 'Context'), '1,5m')
     assert.ok(within(costsPopover).getByText('Reasoning'))
     assert.ok(within(costsPopover).getByText('3 levels'))
-    assert.ok(screen.getByText('AI credits per 1M tokens'))
+    assertElementTextContent(costsPopover, 'h4', 'AI credits per 1,5m tokens')
     assert.ok(screen.getByText('Input'))
     assert.ok(screen.getByText('200'))
     assert.ok(screen.getByText('Cached input'))
@@ -462,7 +485,7 @@ describe('CopilotPreferences', () => {
     )
     assert.ok(costsPopover instanceof HTMLElement)
 
-    assert.ok(within(costsPopover).getByText('AI credits per 1M tokens'))
+    assertElementTextContent(costsPopover, 'h4', 'AI credits per 1m tokens')
     assert.ok(within(costsPopover).getByText('200'))
     assert.strictEqual(
       within(costsPopover).getAllByText('Unavailable').length,

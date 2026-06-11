@@ -1,7 +1,7 @@
 import * as React from 'react'
 import memoizeOne from 'memoize-one'
 
-import { formatNumber } from '../../lib/format-number'
+import { formatCompactNumber, formatNumber } from '../../lib/format-number'
 import { DefaultCopilotModel } from '../../lib/stores/copilot-store'
 import { type IBYOKProvider, encodeModelKey } from '../../lib/copilot/byok'
 import { IFilterListGroup, IFilterListItem } from './filter-list'
@@ -71,25 +71,8 @@ const formatModelPickerCategoryHeader = (category: string) => {
   )}`
 }
 
-const formatCompactNumber = (value: number) => {
-  if (Number.isInteger(value)) {
-    return value.toString()
-  }
-
-  return value.toFixed(1).replace(/\.0$/, '')
-}
-
-const formatTokenBatchSize = (tokenCount: number) => {
-  if (tokenCount >= 1_000_000) {
-    return `${formatCompactNumber(tokenCount / 1_000_000)}M`
-  }
-
-  if (tokenCount >= 1_000) {
-    return `${formatCompactNumber(tokenCount / 1_000)}K`
-  }
-
-  return tokenCount.toString()
-}
+const formatTokenBatchSize = (tokenCount: number) =>
+  formatCompactNumber(tokenCount)
 
 const formatReasoningEffortLevels = (
   supportedReasoningEfforts: ReadonlyArray<string> | undefined
