@@ -1,6 +1,7 @@
-import { describe, it } from 'node:test'
+import type { CopilotSession } from '@github/copilot-sdk'
+import type { Model } from '@github/copilot-sdk/dist/generated/rpc'
 import assert from 'node:assert'
-import type { CopilotSession, ModelInfo } from '@github/copilot-sdk'
+import { describe, it } from 'node:test'
 import {
   CopilotConflictResolutionAbortError,
   DefaultCopilotModel,
@@ -12,8 +13,8 @@ import {
 } from '../../../src/lib/stores/copilot-store'
 
 function makeModel(
-  overrides: Partial<ModelInfo> & Pick<ModelInfo, 'id' | 'name'>
-): ModelInfo {
+  overrides: Partial<Model> & Pick<Model, 'id' | 'name'>
+): Model {
   return {
     capabilities: {
       supports: { vision: false, reasoningEffort: false },
@@ -141,6 +142,74 @@ describe('getPreferredDefaultModel', () => {
     assert.strictEqual(result, cheap)
   })
 
+  it('falls back to the cheapest model by token prices', () => {
+    const expensive = makeModel({
+      id: 'expensive',
+      name: 'Expensive',
+      billing: {
+        tokenPrices: {
+          batchSize: 1000000,
+          cachePrice: 500,
+          inputPrice: 2000,
+          outputPrice: 5000,
+        },
+      },
+    })
+    const cheap = makeModel({
+      id: 'cheap',
+      name: 'Cheap',
+      billing: {
+        tokenPrices: {
+          batchSize: 1000000,
+          cachePrice: 20,
+          inputPrice: 200,
+          outputPrice: 1200,
+        },
+      },
+    })
+    const mid = makeModel({
+      id: 'mid',
+      name: 'Mid',
+      billing: {
+        tokenPrices: {
+          batchSize: 1000000,
+          cachePrice: 100,
+          inputPrice: 1000,
+          outputPrice: 2500,
+        },
+      },
+    })
+    const result = getPreferredDefaultModel([expensive, mid, cheap])
+    assert.strictEqual(result, cheap)
+  })
+
+  it('normalizes token price costs by batch size', () => {
+    const smallerBatch = makeModel({
+      id: 'smaller-batch',
+      name: 'Smaller Batch',
+      billing: {
+        tokenPrices: {
+          batchSize: 1000,
+          inputPrice: 10,
+          outputPrice: 10,
+        },
+      },
+    })
+    const largerBatch = makeModel({
+      id: 'larger-batch',
+      name: 'Larger Batch',
+      billing: {
+        tokenPrices: {
+          batchSize: 1000000,
+          inputPrice: 100,
+          outputPrice: 100,
+        },
+      },
+    })
+    const result = getPreferredDefaultModel([smallerBatch, largerBatch])
+    assert.strictEqual(result, largerBatch)
+  })
+
   it('treats models without billing info as most expensive', () => {
     const noBilling = makeModel({
       id: 'no-billing',
@@ -178,6 +247,53 @@ describe('getPreferredDefaultModel', () => {
     })
     const result = getPreferredDefaultModel([cheapModel, defaultModel])
     assert.strictEqual(result, defaultModel)
+  })
+
+  it('treats models without token prices as most expensive in usage billing', () => {
+    const noBilling = makeModel({
+      id: 'no-billing',
+      name: 'No Billing',
+    })
+    const withBilling = makeModel({
+      id: 'with-billing',
+      name: 'With Billing',
+      billing: {
+        tokenPrices: {
+          batchSize: 1000000,
+          inputPrice: 500,
+          outputPrice: 1000,
+        },
+      },
+    })
+    const result = getPreferredDefaultModel([noBilling, withBilling])
+    assert.strictEqual(result, withBilling)
+  })
+
+  it('treats models with incomplete token prices as most expensive in usage billing', () => {
+    const incomplete = makeModel({
+      id: 'incomplete',
+      name: 'Incomplete',
+      billing: {
+        tokenPrices: {
+          batchSize: 1000000,
+          inputPrice: 1,
+        },
+      },
+    })
+    const complete = makeModel({
+      id: 'complete',
+      name: 'Complete',
+      billing: {
+        tokenPrices: {
+          batchSize: 1000000,
+          inputPrice: 100,
+          outputPrice: 100,
+        },
+      },
+    })
+
+    const result = getPreferredDefaultModel([incomplete, complete])
+    assert.strictEqual(result, complete)
   })
 })
 

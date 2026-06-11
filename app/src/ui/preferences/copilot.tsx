@@ -1,29 +1,34 @@
 import * as React from 'react'
-import { DialogContent } from '../dialog'
-import { Row } from '../lib/row'
-import { Select } from '../lib/select'
-import { Button } from '../lib/button'
-import { LinkButton } from '../lib/link-button'
-import { Octicon } from '../octicons'
-import * as octicons from '../octicons/octicons.generated'
-import { TabBar } from '../tab-bar'
-import type { ModelInfo } from '@github/copilot-sdk'
+import {
+  encodeModelKey,
+  isLocalBaseUrl,
+  parseModelKey,
+  type IBYOKProvider,
+} from '../../lib/copilot/byok'
+import { enableCopilotConflictResolution } from '../../lib/feature-flag'
 import {
   DefaultCopilotModel,
   type CopilotFeature,
   type CopilotModelSelections,
 } from '../../lib/stores/copilot-store'
+import { DialogContent } from '../dialog'
+import { Button } from '../lib/button'
 import {
-  IBYOKProvider,
-  encodeModelKey,
-  isLocalBaseUrl,
-  parseModelKey,
-} from '../../lib/copilot/byok'
-import { enableCopilotConflictResolution } from '../../lib/feature-flag'
+  CopilotModelPicker,
+  getCopilotModelPickerSelectionInfo,
+  hasCopilotModelPickerItems,
+} from '../lib/copilot-model-picker'
+import { LinkButton } from '../lib/link-button'
+import { Row } from '../lib/row'
+import { Octicon } from '../octicons'
+import * as octicons from '../octicons/octicons.generated'
+import { TabBar } from '../tab-bar'
+import { CopilotModelSelectionInfo } from './copilot-model-selection-info'
+import type { Model } from '@github/copilot-sdk/dist/generated/rpc'
 
 interface ICopilotPreferencesProps {
   readonly selectedCopilotModels: CopilotModelSelections
-  readonly copilotModels: ReadonlyArray<ModelInfo> | null
+  readonly copilotModels: ReadonlyArray<Model> | null
   readonly copilotAvailable: boolean
   readonly byokProviders: ReadonlyArray<IBYOKProvider>
   readonly showBYOKSettings: boolean
@@ -53,22 +58,12 @@ export class CopilotPreferences extends React.Component<
     this.setState({ selectedTabIndex: index })
   }
 
-  private onCommitMessageModelChanged = (
-    event: React.FormEvent<HTMLSelectElement>
-  ) => {
-    this.props.onSelectedCopilotModelChanged(
-      'commit-message-generation',
-      event.currentTarget.value
-    )
+  private onCommitMessageModelChanged = (model: string) => {
+    this.props.onSelectedCopilotModelChanged('commit-message-generation', model)
   }
 
-  private onConflictResolutionModelChanged = (
-    event: React.FormEvent<HTMLSelectElement>
-  ) => {
-    this.props.onSelectedCopilotModelChanged(
-      'conflict-resolution',
-      event.currentTarget.value
-    )
+  private onConflictResolutionModelChanged = (model: string) => {
+    this.props.onSelectedCopilotModelChanged('conflict-resolution', model)
   }
 
   private onAddBYOKProviderClick = () => this.props.onAddBYOKProvider()
@@ -131,7 +126,7 @@ export class CopilotPreferences extends React.Component<
       return <p>Loading available models…</p>
     }
 
-    if (copilotModels.length === 0 && byokProviders.length === 0) {
+    if (!hasCopilotModelPickerItems(copilotModels, byokProviders)) {
       return <p>No models available. Check your Copilot subscription.</p>
     }
 
@@ -171,10 +166,10 @@ export class CopilotPreferences extends React.Component<
   }
 
   private renderFeatureModelPicker(
-    copilotModels: ReadonlyArray<ModelInfo>,
+    copilotModels: ReadonlyArray<Model>,
     feature: CopilotFeature,
     label: string,
-    onChange: (event: React.FormEvent<HTMLSelectElement>) => void
+    onChange: (model: string) => void
   ): JSX.Element {
     const { byokProviders, selectedCopilotModels } = this.props
 
@@ -184,43 +179,32 @@ export class CopilotPreferences extends React.Component<
       byokProviders,
       rawSelection
     )
+    const selectionInfo = getCopilotModelPickerSelectionInfo(
+      copilotModels,
+      value
+    )
 
     return (
-      <Select label={label} value={value} onChange={onChange}>
-        {copilotModels.length > 0 && (
-          <optgroup label="GitHub Copilot">
-            {copilotModels.map(m => (
-              <option
-                key={m.id}
-                value={encodeModelKey({ kind: 'copilot', modelId: m.id })}
-              >
-                {m.id === DefaultCopilotModel ? `${m.name} (default)` : m.name}
-              </option>
-            ))}
-          </optgroup>
+      <>
+        <CopilotModelPicker
+          label={label}
+          copilotModels={copilotModels}
+          byokProviders={byokProviders}
+          value={value}
+          onChange={onChange}
+        />
+        {selectionInfo === null ? null : (
+          <CopilotModelSelectionInfo
+            feature={feature}
+            selectionInfo={selectionInfo}
+          />
         )}
-        {byokProviders.map(p => (
-          <optgroup key={p.id} label={p.name}>
-            {p.models.map(m => (
-              <option
-                key={m.id}
-                value={encodeModelKey({
-                  kind: 'byok',
-                  providerId: p.id,
-                  modelId: m.id,
-                })}
-              >
-                {m.name}
-              </option>
-            ))}
-          </optgroup>
-        ))}
-      </Select>
+      </>
     )
   }
 
   private resolveSelectionValue(
-    copilotModels: ReadonlyArray<ModelInfo>,
+    copilotModels: ReadonlyArray<Model>,
     byokProviders: ReadonlyArray<IBYOKProvider>,
     raw: string | null
   ): string {
@@ -243,7 +227,7 @@ export class CopilotPreferences extends React.Component<
   }
 
   private getFirstSelectableModelValue(
-    copilotModels: ReadonlyArray<ModelInfo>,
+    copilotModels: ReadonlyArray<Model>,
     byokProviders: ReadonlyArray<IBYOKProvider>
   ): string {
     if (copilotModels.length === 0 && byokProviders.length === 0) {
@@ -268,7 +252,13 @@ export class CopilotPreferences extends React.Component<
       return encodeModelKey({ kind: 'copilot', modelId: firstCopilotModel.id })
     }
 
-    const firstProvider = byokProviders[0]
+    const firstProvider = byokProviders.find(provider => provider.models[0])
+
+    if (firstProvider === undefined) {
+      // This should not happen because we check for selectable models earlier.
+      throw new Error('No models available')
+    }
+
     const firstByokModel = firstProvider.models[0]
     return encodeModelKey({
       kind: 'byok',

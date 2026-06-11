@@ -154,7 +154,6 @@ import {
   ICompareState,
   CommitOptions,
 } from '../app-state'
-import type { ModelInfo } from '@github/copilot-sdk'
 import {
   findEditorOrDefault,
   getAvailableEditors,
@@ -407,6 +406,7 @@ import {
 } from '../pull-request-refs'
 import { resolveWithin } from '../path'
 import { WorktreeEntry } from '../../models/worktree'
+import type { Model } from '@github/copilot-sdk/dist/generated/rpc'
 
 const LastSelectedRepositoryIDKey = 'last-selected-repository-id'
 
@@ -707,7 +707,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
   private showChangesFilter: boolean = false
 
   private selectedCopilotModels: CopilotModelSelections = {}
-  private copilotModels: ReadonlyArray<ModelInfo> | null = null
+  private copilotModels: ReadonlyArray<Model> | null = null
   private byokProviders: ReadonlyArray<IBYOKProvider> = []
 
   public constructor(

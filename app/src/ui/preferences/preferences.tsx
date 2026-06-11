@@ -42,7 +42,6 @@ import { Prompts } from './prompts'
 import { Repository } from '../../models/repository'
 import { Notifications } from './notifications'
 import { Accessibility } from './accessibility'
-import type { ModelInfo } from '@github/copilot-sdk'
 import { CopilotPreferences } from './copilot'
 import type {
   CopilotFeature,
@@ -79,6 +78,7 @@ import {
   setNumberFormatPreference,
 } from '../../models/formatting-preferences'
 import { enableFormattingPreferences } from '../../lib/feature-flag'
+import type { Model } from '@github/copilot-sdk/dist/generated/rpc'
 
 interface IPreferencesProps {
   readonly dispatcher: Dispatcher
@@ -115,7 +115,7 @@ interface IPreferencesProps {
   readonly underlineLinks: boolean
   readonly showDiffCheckMarks: boolean
   readonly selectedCopilotModels: CopilotModelSelections
-  readonly copilotModels: ReadonlyArray<ModelInfo> | null
+  readonly copilotModels: ReadonlyArray<Model> | null
   readonly copilotAvailable: boolean
   readonly byokProviders: ReadonlyArray<IBYOKProvider>
 }
