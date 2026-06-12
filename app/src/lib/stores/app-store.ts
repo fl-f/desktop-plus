@@ -996,7 +996,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
     this.accountsStore.onDidUpdate(accounts => {
       this.accounts = accounts
       this.syncCopilotModelsFromCache()
-      this.fetchUncachedCopilotModelsForCurrentAccount()
+      this.updateCopilotModelsForCurrentAccount()
       const endpointTokens = accounts.map<EndpointToken>(
         ({ endpoint, token }) => ({ endpoint, token })
       )
@@ -1060,7 +1060,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
     this.copilotModels = this.copilotStore.getCachedModelList(account)
   }
 
-  private fetchUncachedCopilotModelsForCurrentAccount(): void {
+  private updateCopilotModelsForCurrentAccount(): void {
     const account = this.getCopilotModelsAccount()
 
     if (
