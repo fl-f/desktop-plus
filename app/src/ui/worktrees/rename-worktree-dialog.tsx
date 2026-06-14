@@ -7,7 +7,6 @@ import { Dialog, DialogContent, DialogFooter } from '../dialog'
 import { TextBox } from '../lib/text-box'
 import { OkCancelButtonGroup } from '../dialog/ok-cancel-button-group'
 import { moveWorktree } from '../../lib/git/worktree'
-import { setPreferredWorktreePath } from '../../lib/worktree-preferences'
 
 interface IRenameWorktreeDialogProps {
   readonly repository: Repository
@@ -46,14 +45,12 @@ export class RenameWorktreeDialog extends React.Component<
     this.setState({ renaming: true })
 
     const storedRepo = await dispatcher.getRepositoryForPath(worktreePath)
-    const mainRepoPath = repository.path
 
     try {
       await moveWorktree(repository, worktreePath, newPath)
       if (storedRepo !== null) {
         await dispatcher.updateRepositoryPath(storedRepo, newPath)
       }
-      setPreferredWorktreePath(mainRepoPath, newPath)
     } catch (e) {
       dispatcher.postError(e)
       return

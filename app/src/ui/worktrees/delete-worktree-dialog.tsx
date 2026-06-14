@@ -8,10 +8,6 @@ import { Ref } from '../lib/ref'
 import { OkCancelButtonGroup } from '../dialog/ok-cancel-button-group'
 import { removeWorktree, getMainWorktreePath } from '../../lib/git/worktree'
 import { normalizePath } from '../../lib/helpers/path'
-import {
-  getPreferredWorktreePath,
-  clearPreferredWorktreePath,
-} from '../../lib/worktree-preferences'
 
 interface IDeleteWorktreeDialogProps {
   readonly repository: Repository
@@ -70,18 +66,15 @@ export class DeleteWorktreeDialog extends React.Component<
     const isDeletingCurrentWorktree =
       normalizePath(repository.path) === normalizePath(worktreePath)
 
-    const mainPathForCleanup = await getMainWorktreePath(repository)
-
     try {
       if (isDeletingCurrentWorktree) {
         // When deleting the currently selected worktree, we must switch away
         // first. Otherwise git runs from the directory being deleted and the
         // app is left pointing at a non-existent path.
-        if (mainPathForCleanup === null) {
+        const mainPath = await getMainWorktreePath(repository)
+        if (mainPath === null) {
           throw new Error('Could not find main worktree')
         }
-
-        const mainPath = mainPathForCleanup
 
         const addedRepos = await dispatcher.addRepositories(
           [mainPath],
@@ -97,18 +90,11 @@ export class DeleteWorktreeDialog extends React.Component<
         await dispatcher.removeRepository(repository, false)
       } else {
         await removeWorktree(repository, worktreePath)
-        await dispatcher.refreshRepository(repository)
       }
     } catch (e) {
       dispatcher.postError(e)
       this.setState({ isDeleting: false })
       return
-    }
-
-    const resolvedMainPath = mainPathForCleanup ?? repository.path
-    const preferred = getPreferredWorktreePath(resolvedMainPath)
-    if (preferred && normalizePath(preferred) === normalizePath(worktreePath)) {
-      clearPreferredWorktreePath(resolvedMainPath)
     }
 
     this.props.onDismissed()

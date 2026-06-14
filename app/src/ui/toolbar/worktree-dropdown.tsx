@@ -19,7 +19,6 @@ import { PopupType } from '../../models/popup'
 import { Resizable } from '../resizable'
 import { enableResizingToolbarButtons } from '../../lib/feature-flag'
 import { normalizePath } from '../../lib/helpers/path'
-import { setPreferredWorktreePath } from '../../lib/worktree-preferences'
 
 interface IWorktreeDropdownProps {
   readonly dispatcher: Dispatcher
@@ -59,13 +58,6 @@ export class WorktreeDropdown extends React.Component<
     const previousWorktreeRepo = this.state.worktreeAddedRepo
 
     dispatcher.closeFoldout(FoldoutType.Worktree)
-
-    const { allWorktrees } = this.props.repositoryState.worktreesState
-    const mainWorktree = allWorktrees.find(wt => wt.type === 'main')
-
-    if (mainWorktree) {
-      setPreferredWorktreePath(mainWorktree.path, worktree.path)
-    }
 
     const existingRepo = repositories.find(
       r => r instanceof Repository && normalizePath(r.path) === worktreePath

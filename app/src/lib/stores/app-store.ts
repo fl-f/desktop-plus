@@ -24,11 +24,6 @@ import {
 } from '../../models/diff-font'
 import { EditorOverride } from '../../models/editor-override'
 import { stageResolvedConflictFiles } from '../git/stage'
-import { normalizePath } from '../helpers/path'
-import {
-  getPreferredWorktreePath,
-  clearPreferredWorktreePath,
-} from '../worktree-preferences'
 import {
   AccountsStore,
   CloningRepositoriesStore,
@@ -2467,56 +2462,19 @@ export class AppStore extends TypedBaseStore<IAppState> {
 
     this.selectedRepository = repository
 
+    this.emitUpdate()
     this.stopBackgroundFetching()
     this.stopPullRequestUpdater()
     this._clearBanner()
     this.stopBackgroundPruner()
 
     if (repository == null) {
-      this.emitUpdate()
       return Promise.resolve(null)
     }
 
     if (!(repository instanceof Repository)) {
-      this.emitUpdate()
       return Promise.resolve(null)
     }
-
-    // When returning to a repository that has worktrees, restore the
-    // previously active linked worktree so the user doesn't always land
-    // on the main worktree after switching repos.
-    if (!repository.isLinkedWorktree) {
-      const repoPath = normalizePath(repository.path)
-      const preferredPath = getPreferredWorktreePath(repoPath)
-
-      if (preferredPath && preferredPath !== repoPath) {
-        const linkedRepo = this.repositories.find(
-          r =>
-            r instanceof Repository && normalizePath(r.path) === preferredPath
-        )
-
-        if (linkedRepo instanceof Repository) {
-          repository = linkedRepo
-          this.selectedRepository = repository
-        } else {
-          const exists = await pathExists(preferredPath)
-          if (exists) {
-            const addedRepos = await this._addRepositories(
-              [preferredPath],
-              repository.login
-            )
-            if (addedRepos.length > 0) {
-              repository = addedRepos[0]
-              this.selectedRepository = repository
-            }
-          } else {
-            clearPreferredWorktreePath(repoPath)
-          }
-        }
-      }
-    }
-
-    this.emitUpdate()
 
     if (persistSelection) {
       setNumber(LastSelectedRepositoryIDKey, repository.id)
@@ -8186,23 +8144,6 @@ export class AppStore extends TypedBaseStore<IAppState> {
     } catch (err) {
       this.emitError(err)
       return
-    }
-
-    if (repository instanceof Repository) {
-      if (repository.isLinkedWorktree) {
-        const repoPath = normalizePath(repository.path)
-        const mainRepo = this.repositories.find(
-          r =>
-            r instanceof Repository &&
-            !r.isLinkedWorktree &&
-            getPreferredWorktreePath(normalizePath(r.path)) === repoPath
-        )
-        if (mainRepo instanceof Repository) {
-          clearPreferredWorktreePath(normalizePath(mainRepo.path))
-        }
-      } else {
-        clearPreferredWorktreePath(normalizePath(repository.path))
-      }
     }
 
     const allRepositories = await this.repositoriesStore.getAll()
