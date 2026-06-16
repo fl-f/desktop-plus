@@ -3612,6 +3612,9 @@ export class App extends React.Component<IAppProps, IAppState> {
       return ''
     }
     const worktreeName = Path.basename(repository.path)
+    if (worktreeName === repository.name) {
+      return ''
+    }
     return ` (${worktreeName})`
   }
 
