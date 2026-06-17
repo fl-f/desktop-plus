@@ -2,9 +2,8 @@ import { app, net } from 'electron'
 import { getArchitecture } from '../lib/get-architecture'
 import { getMainGUID } from '../lib/get-main-guid'
 
-const ErrorEndpoint = 'https://central.github.com/api/desktop/exception'
-const NonFatalErrorEndpoint =
-  'https://central.github.com/api/desktop-non-fatal/exception'
+const ErrorEndpoint = __ERROR_REPORTING_ENDPOINT__
+const NonFatalErrorEndpoint = __NON_FATAL_ERROR_REPORTING_ENDPOINT__
 
 let hasSentFatalError = false
 
@@ -15,6 +14,11 @@ export async function reportError(
   nonFatal?: boolean
 ) {
   if (__DEV__) {
+    return
+  }
+
+  const url = nonFatal ? NonFatalErrorEndpoint : ErrorEndpoint
+  if (url === undefined) {
     return
   }
 
@@ -59,7 +63,6 @@ export async function reportError(
 
   try {
     await new Promise<void>((resolve, reject) => {
-      const url = nonFatal ? NonFatalErrorEndpoint : ErrorEndpoint
       const request = net.request({ method: 'POST', url })
 
       request.setHeader('Content-Type', 'application/x-www-form-urlencoded')
