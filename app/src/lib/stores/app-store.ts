@@ -6827,7 +6827,11 @@ export class AppStore extends TypedBaseStore<IAppState> {
     newPath: string
   ): Promise<void> {
     await moveWorktree(repository, worktreePath, newPath)
-    await this._refreshWorktrees(repository)
+    const result = await this.repositoriesStore.switchWorktree(
+      repository,
+      newPath
+    )
+    await this._refreshWorktrees(result.repository)
   }
 
   public _setWorktreeDropdownWidth(width: number): Promise<void> {
