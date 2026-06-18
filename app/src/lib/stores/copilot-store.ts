@@ -17,7 +17,7 @@ import {
   CopilotValidationError,
   ConflictResolutionSystemPrompt,
   ICopilotConflictReference,
-  ICopilotConflictResolutionResponse,
+  IReassembledConflictResolutionResponse,
   IConflictResolutionProgress,
   IFileResolution,
   SinglePromptFileLimit,
@@ -25,6 +25,7 @@ import {
   parseCopilotConflictResolution,
   validateResolutionPaths,
   createDependencyAwareChunks,
+  reassembleResolutions,
 } from '../copilot-conflict-resolution'
 import {
   IConflictResolutionContext,
@@ -1130,7 +1131,7 @@ export class CopilotStore extends BaseStore {
     request?: CopilotModelRequest | null,
     onProgress?: (progress: IConflictResolutionProgress) => void,
     signal?: AbortSignal
-  ): Promise<ICopilotConflictResolutionResponse> {
+  ): Promise<IReassembledConflictResolutionResponse> {
     const resolvableFiles = context.files.filter(f => !f.skippedReason)
     const filesTotal = resolvableFiles.length
 
@@ -1284,7 +1285,6 @@ export class CopilotStore extends BaseStore {
     readonly summary: string | null
     readonly references: ReadonlyArray<ICopilotConflictReference>
   }> {
-    const expectedPaths = new Set(expectedFiles.map(f => f.path))
     let lastError: Error | undefined
 
     for (let attempt = 0; attempt < 2; attempt++) {
@@ -1336,13 +1336,17 @@ export class CopilotStore extends BaseStore {
 
         streamTimer.done()
 
-        const parseTimer = startTimer('parse+validate')
+        const parseTimer = startTimer('parse+validate+reassemble')
         const parsed = parseCopilotConflictResolution(responseContent)
-        validateResolutionPaths(parsed.resolutions, expectedPaths)
+        validateResolutionPaths(parsed.resolutions, expectedFiles)
+        const resolutions = reassembleResolutions(
+          parsed.resolutions,
+          expectedFiles
+        )
         parseTimer.done()
 
         return {
-          resolutions: parsed.resolutions,
+          resolutions,
           summary: parsed.summary,
           references: parsed.references,
         }
