@@ -2,7 +2,10 @@ import * as React from 'react'
 import memoizeOne from 'memoize-one'
 
 import { formatCompactNumber, formatNumber } from '../../lib/format-number'
-import { DefaultCopilotModel } from '../../lib/stores/copilot-store'
+import {
+  DefaultCopilotModel,
+  DisabledCopilotModel,
+} from '../../lib/stores/copilot-store'
 import { type IBYOKProvider, encodeModelKey } from '../../lib/copilot/byok'
 import { IFilterListGroup, IFilterListItem } from './filter-list'
 import { PopoverDecoration } from './popover'
@@ -214,11 +217,28 @@ const getCopilotModelAriaLabel = (item: ICopilotModelListItem) => {
   return subtitle === null ? title : `${title}, ${subtitle}`
 }
 
+const getDisabledModelItem = (): ICopilotModelListItem => ({
+  id: DisabledCopilotModel,
+  text: ['None (hide Copilot button)', DisabledCopilotModel],
+  value: DisabledCopilotModel,
+  name: 'None (hide Copilot button)',
+  billing: undefined,
+  modelPickerCategory: undefined,
+  modelPickerPriceCategory: undefined,
+  isDefault: false,
+})
+
 const getCopilotModelGroups = (
   copilotModels: ReadonlyArray<Model>,
   byokProviders: ReadonlyArray<IBYOKProvider>
 ): ReadonlyArray<IFilterListGroup<ICopilotModelListItem>> => {
   const groups = new Array<IFilterListGroup<ICopilotModelListItem>>()
+
+  groups.push({
+    identifier: '',
+    showHeader: false,
+    items: [getDisabledModelItem()],
+  })
 
   if (copilotModels.length > 0) {
     const providerName = 'GitHub Copilot'

@@ -16,6 +16,7 @@ import {
 import { CopilotPreferences } from '../../../src/ui/preferences/copilot'
 import {
   DefaultCopilotModel,
+  DisabledCopilotModel,
   type CopilotFeature,
 } from '../../../src/lib/stores/copilot-store'
 import {
@@ -571,10 +572,11 @@ describe('CopilotPreferences', () => {
     const view = render(
       <CopilotPreferences {...defaults()} byokProviders={[ollamaProvider]} />
     )
-    const labels = Array.from(view.container.querySelectorAll('optgroup')).map(
-      g => g.label
-    )
-    assert.deepStrictEqual(labels, ['GitHub Copilot', 'Ollama'])
+
+    fireEvent.click(getModelPickerButton(view.container))
+
+    await waitFor(() => assert.ok(screen.getByText('Ollama')))
+    assert.strictEqual(screen.queryByText('GitHub Copilot'), null)
   })
 
   it('selects the default Copilot model when no model is selected', () => {
@@ -824,6 +826,79 @@ describe('CopilotPreferences', () => {
     ])
   })
 
+  it('offers a "None" option to disable commit message generation', async () => {
+    const view = render(<CopilotPreferences {...defaults()} />)
+
+    fireEvent.click(getModelPickerButton(view.container))
+
+    await waitFor(() =>
+      assert.ok(screen.getByText('None (hide Copilot button)'))
+    )
+  })
+
+  it('shows the None selection on the button when generation is disabled', () => {
+    const view = render(
+      <CopilotPreferences
+        {...defaults()}
+        selectedCopilotModels={{
+          'commit-message-generation': DisabledCopilotModel,
+        }}
+      />
+    )
+
+    assert.ok(
+      getModelPickerButtonText(view.container).includes(
+        'None (hide Copilot button)'
+      )
+    )
+  })
+
+  it('emits the None value when generation is disabled', async () => {
+    const changed: Array<{ feature: CopilotFeature; model: string | null }> = []
+    const view = render(
+      <CopilotPreferences
+        {...defaults()}
+        onSelectedCopilotModelChanged={(f, m) =>
+          changed.push({ feature: f, model: m })
+        }
+      />
+    )
+
+    fireEvent.click(getModelPickerButton(view.container))
+    await waitFor(() =>
+      assert.ok(screen.getByText('None (hide Copilot button)'))
+    )
+    fireEvent.click(screen.getByText('None (hide Copilot button)'))
+
+    assert.deepStrictEqual(changed, [
+      {
+        feature: 'commit-message-generation',
+        model: DisabledCopilotModel,
+      },
+    ])
+  })
+
+  it('offers the None option for conflict resolution too', async () => {
+    const previousPreviewFeatures = process.env.GITHUB_DESKTOP_PREVIEW_FEATURES
+    process.env.GITHUB_DESKTOP_PREVIEW_FEATURES = '1'
+    try {
+      const view = render(<CopilotPreferences {...defaults()} />)
+      const conflictPickerButton = getModelPickerButtons(view.container)[1]
+      assert.ok(conflictPickerButton instanceof HTMLButtonElement)
+
+      fireEvent.click(conflictPickerButton)
+      await waitFor(() =>
+        assert.ok(screen.getByText('None (hide Copilot button)'))
+      )
+    } finally {
+      if (previousPreviewFeatures === undefined) {
+        delete process.env.GITHUB_DESKTOP_PREVIEW_FEATURES
+      } else {
+        process.env.GITHUB_DESKTOP_PREVIEW_FEATURES = previousPreviewFeatures
+      }
+    }
+  })
+
   it('falls back to the default Copilot model when persisted selection is not in the model list', () => {
     const view = render(
       <CopilotPreferences
@@ -962,11 +1037,10 @@ describe('CopilotPreferences', () => {
       }
     }
 
-    it('is hidden when the feature flag is disabled', () => {
-      withConflictResolutionEnabled(false, () => {
+    it('is hidden when the feature flag is disabled', async () => {
+      await withConflictResolutionEnabled(false, () => {
         const view = render(<CopilotPreferences {...defaults()} />)
-        const selects = view.container.querySelectorAll('select')
-        assert.strictEqual(selects.length, 1)
+        assert.strictEqual(getModelPickerButtons(view.container).length, 1)
       })
     })
 
