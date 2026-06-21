@@ -1,7 +1,7 @@
 import assert from 'node:assert'
 import * as Path from 'path'
 import { describe, it } from 'node:test'
-import { rm } from 'fs/promises'
+import { realpath, rm } from 'fs/promises'
 import { exec } from 'dugite'
 import { setupEmptyRepository } from '../../helpers/repositories'
 import { makeCommit } from '../../helpers/repository-scaffolding'
@@ -336,7 +336,7 @@ describe('git/worktree', () => {
 
       assert.strictEqual(
         await getMainWorktreePath(linkedRepo),
-        Path.normalize(repo.path)
+        await realpath(repo.path)
       )
     })
 
@@ -361,7 +361,7 @@ describe('git/worktree', () => {
 
       assert.strictEqual(
         await getMainWorktreePath(linkedRepo),
-        Path.normalize(repo.path)
+        await realpath(repo.path)
       )
     })
 
