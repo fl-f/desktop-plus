@@ -1,3 +1,4 @@
+import * as Path from 'path'
 import {
   Repository,
   ILocalRepositoryState,
@@ -215,7 +216,6 @@ function buildRepositoryRows(
   needsDisambiguation: boolean
 ): IRepositoryListItem[] {
   const title = getDisplayTitle(r)
-  const text = r instanceof Repository ? [title, nameOf(r)] : [title]
   const defaultBranchName = repoState?.defaultBranchName ?? null
 
   const worktrees = r instanceof Repository ? repoState?.worktrees ?? [] : []
@@ -225,9 +225,11 @@ function buildRepositoryRows(
   const changedFilesCount = repoState?.changedFilesCount ?? 0
   const isMainWorktreeActive =
     mainWorktree === null || mainWorktree.path === r.path
+  const mainWorktreeText =
+    r instanceof Repository ? [title, nameOf(r)] : [title]
 
   const mainWorktreeRow: IRepositoryListItem = {
-    text,
+    text: mainWorktreeText,
     id: r.id.toString(),
     repository: r,
     needsDisambiguation,
@@ -246,7 +248,7 @@ function buildRepositoryRows(
     .map((wt): IRepositoryListItem => {
       const isActiveWorktree = wt.path === r.path
       return {
-        text,
+        text: [Path.basename(wt.path)],
         id: `${r.id}:${wt.path}`,
         repository: r,
         needsDisambiguation: false,
