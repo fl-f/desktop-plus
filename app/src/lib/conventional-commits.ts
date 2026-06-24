@@ -51,7 +51,7 @@ const conventionalCommitLabelsByType = new Map<string, string>(
  * breaking-change (`!`) marker.
  */
 const conventionalCommitPattern = RE2JS.compile(
-  '^\\s*(\\w+)(?:\\((.+?)\\))?(!)?: *'
+  '^(\\s*(?:Merge|Revert|Reapply)\\s+"?)?\\s*(\\w+)(?:\\((.+?)\\))?(!)?: *'
 )
 
 /** A parsed Conventional Commit prefix. */
@@ -65,8 +65,11 @@ export interface IConventionalCommit {
   /** The optional scope (the text inside the parentheses), or null. */
   readonly scope: string | null
 
-  /** The remainder of the summary, with the prefix stripped. */
-  readonly rest: string
+  /** Plain text rendered before the badge: `Merge`/`Revert`/`Reapply` */
+  readonly leftSideText: string
+
+  /** The remainder of the summary rendered after the badge, with the prefix stripped. */
+  readonly rightSideText: string
 }
 
 /**
@@ -88,7 +91,7 @@ export function parseConventionalCommit(
     return null
   }
 
-  const matchedType = matcher.group(1)
+  const matchedType = matcher.group(2)
   if (matchedType === null) {
     return null
   }
@@ -97,12 +100,13 @@ export function parseConventionalCommit(
   const rawType = matchedType.toLowerCase()
   const baseLabel = conventionalCommitLabelsByType.get(rawType) ?? rawType
 
-  const isBreaking = matcher.group(3) !== null
+  const isBreaking = matcher.group(4) !== null
 
   return {
     rawType,
     label: isBreaking ? `${baseLabel}!` : baseLabel,
-    scope: matcher.group(2),
-    rest: summary.substring(matcher.end()),
+    scope: matcher.group(3),
+    leftSideText: matcher.group(1) ?? '',
+    rightSideText: summary.substring(matcher.end()),
   }
 }
