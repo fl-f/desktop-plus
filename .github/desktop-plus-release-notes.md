@@ -1,27 +1,40 @@
-Desktop Plus v3.5.13-beta4
+Desktop Plus v3.6.1
 
-Upstream: [GitHub Desktop 3.5.13-beta4 release notes](https://github.com/desktop/desktop/releases/tag/release-3.5.13-beta4)
-
-> This upstream release includes several worktree-related fixes that were upstreamed from our fork.
+Upstream:
+- [GitHub Desktop 3.6.0 release notes](https://github.com/desktop/desktop/releases/tag/release-3.6.0)
+- [GitHub Desktop 3.6.1 release notes](https://github.com/desktop/desktop/releases/tag/release-3.6.1)
 
 ---
 
+## Name change
+
+This is the first release under the new "Desktop Plus" / "GH Desktop Plus" branding!  
+We are still the same GitHub Desktop fork, lead by the same maintainer (@pol-rivero), just with a new name and a new logo.
+
+Thank you very much to @ghedwards for generously giving me the ownership of the *"desktop-plus"* organization name!
+
+> [!CAUTION]
+> ## Breaking changes
+> - **All platforms:** The executable name for the application has changed from `github-desktop-plus` to `desktop-plus`.
+> - **All platforms:** The executable name for the CLI has changed from `github-desktop-plus-cli` to `desktop-plus-cli`.
+> - **Linux (non-Flatpak):** The `.desktop` file name has changed from `github-desktop-plus.desktop` to `desktop-plus.desktop`.
+>
+> If you have any **scripts**, **shortcuts**, **aliases** or **.desktop drop-ins** that reference the old names, please update them to the new ones.
+
+### Stuff you *don't* need to worry about
+
+- For now, the package names used for installing the application remain the same to ensure a smooth transition. I'll update the package names progressively in future releases, and plan to use each platform's migration tools to minimize the amount of manual intervention required.
+- The app's config location has changed due to the new name, but the app settings are automatically migrated on first launch so you don't need to worry about that.
+
+
 ## **Changes and improvements:**
 
-- [#158] When a linked worktree is deleted outside the app, we now attempt to automatically switch to the main worktree instead of showing an error.
+- [#138] New branding and logo. Thank you @matebitte for the new logo design!
 
-- [#188] Display [Conventional Commit](https://www.conventionalcommits.org/en/v1.0.0/) prefixes as badges in the commit list. This lets you quickly identify the type of commit (e.g., feat, fix, chore) at a glance.  
-  If you prefer to hide these badges, you can do so in "Options" > "Appearance" > "Show Conventional Commits prefixes as badges".
+- Include Lucide ISC license in the app's About dialog. Thank you @guplem!
 
-- Branches that are in use by another worktree are no longer disabled on the branch list. Instead, we now adhere to the upstream behavior and switch to the corresponding worktree when a branch is selected.
+- All of the app's telemetry (which is inherited from the upstream project) has been fully disabled.
 
-- Repository indicators (local changes, branch name, etc.) are now loaded much faster by avoiding network requests on the initial load.  
-  Some indicators like "This branch is behind" / "Unpulled changes" that require network will load asynchronously after the initial load, like before.
+- In addition to migrating the old **GitHub Desktop Plus** config to the new **Desktop Plus** directory, the app can now also automatically migrate your settings from **GitHub Desktop** (upstream project). This should make the transition from upstream much smoother for new users.
 
-## **Fixes:**
-
-- [#190] **Debian:** Fixed broken installation in Debian Forky/Sid by updating a dependency to its new name.
-
-- [#192] When "Show worktrees in repository list" is enabled, the repository filter / search box now correctly allows searching for worktrees by name.
-
-- [#193] Fixed a visual bug where the "Search commits" field clips outside its bounds when the side panel is small. Thank you @JBTastic!
+- Fixed a visual bug where the theme preview in the Appearance settings page would flicker momentarily the first time the page is opened.
