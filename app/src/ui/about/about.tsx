@@ -21,9 +21,7 @@ import { isOSNoLongerSupportedByElectron } from '../../lib/get-os'
 import { AriaLiveContainer } from '../accessibility/aria-live-container'
 import { formatDate } from '../../lib/format-date'
 
-const logoPath = __DARWIN__
-  ? 'static/logo-64x64@2x.png'
-  : 'static/windows-logo-64x64@2x.png'
+const logoPath = 'static/logos/512x512.png'
 const DesktopLogo = encodePathAsUrl(__dirname, logoPath)
 
 interface IAboutProps {
