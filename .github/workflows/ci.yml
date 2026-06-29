@@ -385,13 +385,13 @@ jobs:
           name: ${{ steps.release_notes.outputs.title }}
           body: ${{ steps.release_notes.outputs.body }}
           files: |
-            artifacts/**/*.AppImage
-            artifacts/**/*.AppImage.zsync
-            artifacts/**/*.deb
-            artifacts/**/*.rpm
-            artifacts/**/*.exe
-            artifacts/**/*.msi
-            artifacts/**/*-macOS-*.zip
+            artifacts/**/DesktopPlus-*.AppImage
+            artifacts/**/DesktopPlus-*.AppImage.zsync
+            artifacts/**/DesktopPlus-*.deb
+            artifacts/**/DesktopPlus-*.rpm
+            artifacts/**/DesktopPlus-*.exe
+            artifacts/**/DesktopPlus-*.msi
+            artifacts/**/DesktopPlus-*.zip
           draft: false
           fail_on_unmatched_files: true
         env:
