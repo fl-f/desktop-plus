@@ -29,13 +29,25 @@ interface ICopilotInMemorySessionFsFile {
   readonly updatedAt: string
 }
 
+interface ICopilotInMemorySessionFsDirectory {
+  readonly createdAt: string
+  readonly updatedAt: string
+}
+
 function createCopilotInMemorySessionFsError(path: string): Error {
   return Object.assign(new Error(`ENOENT: ${path}`), { code: 'ENOENT' })
 }
 
 export function createCopilotInMemorySessionFsProvider(): SessionFsProvider {
   const files = new Map<string, ICopilotInMemorySessionFsFile>()
-  const directories = new Set<string>(['.', InMemorySessionFsStatePath])
+  const timestamp = new Date().toISOString()
+  const directories = new Map<string, ICopilotInMemorySessionFsDirectory>([
+    ['.', { createdAt: timestamp, updatedAt: timestamp }],
+    [
+      InMemorySessionFsStatePath,
+      { createdAt: timestamp, updatedAt: timestamp },
+    ],
+  ])
 
   const normalizePath = (path: string) => {
     const normalized = posix.normalize(path)
@@ -47,9 +59,19 @@ export function createCopilotInMemorySessionFsProvider(): SessionFsProvider {
     return posix.dirname(normalized)
   }
 
+  const getTimestamp = () => new Date().toISOString()
+
   const addDirectory = (path: string) => {
     const normalized = normalizePath(path)
-    directories.add(normalized)
+    const existing = directories.get(normalized)
+
+    if (existing === undefined) {
+      const timestamp = getTimestamp()
+      directories.set(normalized, {
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      })
+    }
 
     if (normalized !== '.' && normalized !== '/') {
       addDirectory(getParentPath(normalized))
@@ -60,15 +82,13 @@ export function createCopilotInMemorySessionFsProvider(): SessionFsProvider {
     addDirectory(getParentPath(path))
   }
 
-  const getTimestamp = () => new Date().toISOString()
-
   const getDirectChildren = (path: string) => {
     const normalized = normalizePath(path)
     const prefix =
       normalized === '.' ? '' : normalized === '/' ? '/' : `${normalized}/`
     const children = new Set<string>()
 
-    for (const entry of [...files.keys(), ...directories]) {
+    for (const entry of [...files.keys(), ...directories.keys()]) {
       if (entry === normalized || !entry.startsWith(prefix)) {
         continue
       }
@@ -131,14 +151,15 @@ export function createCopilotInMemorySessionFsProvider(): SessionFsProvider {
         return fileInfo
       }
 
-      if (directories.has(normalized)) {
-        const timestamp = getTimestamp()
+      const directory = directories.get(normalized)
+
+      if (directory !== undefined) {
         const directoryInfo: SessionFsFileInfo = {
           isFile: false,
           isDirectory: true,
           size: 0,
-          mtime: timestamp,
-          birthtime: timestamp,
+          mtime: directory.updatedAt,
+          birthtime: directory.createdAt,
         }
         return directoryInfo
       }
@@ -197,7 +218,7 @@ export function createCopilotInMemorySessionFsProvider(): SessionFsProvider {
           }
         }
 
-        for (const directoryPath of [...directories]) {
+        for (const directoryPath of [...directories.keys()]) {
           if (directoryPath.startsWith(prefix)) {
             directories.delete(directoryPath)
           }
@@ -234,11 +255,15 @@ export function createCopilotInMemorySessionFsProvider(): SessionFsProvider {
         }
       }
 
-      for (const directoryPath of [...directories]) {
+      for (const directoryPath of [...directories.keys()]) {
         if (directoryPath.startsWith(srcPrefix)) {
-          directories.add(
-            `${destPrefix}${directoryPath.slice(srcPrefix.length)}`
-          )
+          const directory = directories.get(directoryPath)
+          if (directory !== undefined) {
+            directories.set(
+              `${destPrefix}${directoryPath.slice(srcPrefix.length)}`,
+              directory
+            )
+          }
           directories.delete(directoryPath)
         }
       }

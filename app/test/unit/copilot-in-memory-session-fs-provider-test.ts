@@ -104,6 +104,18 @@ describe('createCopilotInMemorySessionFsProvider', () => {
     assert.strictEqual(Number.isNaN(Date.parse(directoryInfo.birthtime)), false)
   })
 
+  it('keeps directory metadata stable between stat calls', async () => {
+    const provider = createCopilotInMemorySessionFsProvider()
+    const firstInfo = await provider.stat('state')
+
+    await new Promise(resolve => setTimeout(resolve, 10))
+
+    const secondInfo = await provider.stat('state')
+
+    assert.strictEqual(secondInfo.mtime, firstInfo.mtime)
+    assert.strictEqual(secondInfo.birthtime, firstInfo.birthtime)
+  })
+
   it('lists direct children with type information', async () => {
     const provider = createCopilotInMemorySessionFsProvider()
 
