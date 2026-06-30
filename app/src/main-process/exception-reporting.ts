@@ -1,8 +1,40 @@
 import { app, net } from 'electron'
+import * as path from 'path'
 import { getArchitecture } from '../lib/get-architecture'
+import { getFileHash } from '../lib/get-file-hash'
 import { getMainGUID } from '../lib/get-main-guid'
 
 let hasSentFatalError = false
+
+/** Cached bundle hashes, computed on first error report. */
+let cachedBundleHashes: { main: string; renderer: string } | null = null
+
+/**
+ * Compute SHA-256 hashes of the installed main.js and renderer.js bundles.
+ *
+ * Results are cached for the lifetime of the process since bundle files don't
+ * change while the app is running.
+ */
+async function getBundleHashes(): Promise<{
+  main: string
+  renderer: string
+} | null> {
+  if (cachedBundleHashes !== null) {
+    return cachedBundleHashes
+  }
+
+  try {
+    const appPath = app.getAppPath()
+    const [main, renderer] = await Promise.all([
+      getFileHash(path.join(appPath, 'main.js'), 'sha256'),
+      getFileHash(path.join(appPath, 'renderer.js'), 'sha256'),
+    ])
+    cachedBundleHashes = { main, renderer }
+    return cachedBundleHashes
+  } catch {
+    return null
+  }
+}
 
 /** Report the error to Central. */
 export async function reportError(
@@ -46,6 +78,12 @@ export async function reportError(
   data.set('sha', __SHA__)
   data.set('version', app.getVersion())
   data.set('guid', await getMainGUID())
+
+  const bundleHashes = await getBundleHashes()
+  if (bundleHashes !== null) {
+    data.set('mainBundleHash', bundleHashes.main)
+    data.set('rendererBundleHash', bundleHashes.renderer)
+  }
 
   if (extra) {
     for (const key of Object.keys(extra)) {
