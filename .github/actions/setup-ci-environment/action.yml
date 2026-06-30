@@ -51,7 +51,12 @@ runs:
           Linux)   PLATFORM=linux ;;
         esac
 
-        PKG="@github/copilot-${PLATFORM}-${{ inputs.arch }}"
+        # Pin to the exact version already resolved for the @github/copilot
+        # meta package, otherwise yarn add fetches the latest published version
+        # and the binary drifts ahead of the locked version that the license
+        # override (script/licenses/license-overrides.ts) generates keys for.
+        VERSION=$(node -p "require('./app/node_modules/@github/copilot/package.json').version")
+        PKG="@github/copilot-${PLATFORM}-${{ inputs.arch }}@${VERSION}"
 
         if [ ! -d "app/node_modules/@github/copilot-${PLATFORM}-${{ inputs.arch }}" ]; then
           echo "Installing ${PKG} for cross-compilation…"
