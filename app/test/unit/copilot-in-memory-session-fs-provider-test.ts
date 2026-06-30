@@ -88,7 +88,7 @@ describe('createCopilotInMemorySessionFsProvider', () => {
     const provider = createCopilotInMemorySessionFsProvider()
 
     await provider.writeFile('state/events.jsonl', 'event')
-    await provider.mkdir('state/workspace')
+    await provider.mkdir('state/workspace', false)
     await provider.writeFile('state/workspace/context.json', '{}')
 
     const entries = await provider.readdirWithTypes('state')
