@@ -2,7 +2,6 @@ import * as Path from 'path'
 import * as Fs from 'fs'
 
 import { getProductName, getVersion } from '../app/package-info'
-import { computeBundleHashSync } from '../app/src/lib/compute-bundle-hash'
 import { join } from 'path'
 
 const productName = getProductName()
@@ -107,10 +106,6 @@ export function getBundleSizes() {
     // eslint-disable-next-line no-sync
     mainBundleSize: Fs.statSync(Path.join(outPath, 'main.js')).size,
   }
-}
-
-export function getBundleHash() {
-  return computeBundleHashSync(Path.join(projectRoot, 'out'))
 }
 export const isPublishable = () =>
   ['production', 'beta', 'test'].includes(getChannel())

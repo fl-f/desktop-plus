@@ -14,7 +14,6 @@ import {
   getUpdatesURL,
   isPublishable,
   getBundleSizes,
-  getBundleHash,
   getDistRoot,
   getDistArchitecture,
   getIconDirectory,
@@ -22,6 +21,7 @@ import {
 import { isGitHubActions } from './build-platforms'
 import { existsSync, rmSync, writeFileSync } from 'fs'
 import { getVersion } from '../app/package-info'
+import { computeBundleHashSync } from '../app/src/lib/compute-bundle-hash'
 import { rename } from 'fs/promises'
 import { join } from 'path'
 import { assertNonNullable } from '../app/src/lib/fatal-error'
@@ -54,7 +54,9 @@ writeFileSync(
 console.log('Writing bundle hash…')
 writeFileSync(
   path.join(getDistRoot(), 'bundle-hash.json'),
-  JSON.stringify({ bundleHash: getBundleHash() })
+  JSON.stringify({
+    bundleHash: computeBundleHashSync(path.join(__dirname, '..', 'out')),
+  })
 )
 
 function packageOSX() {
