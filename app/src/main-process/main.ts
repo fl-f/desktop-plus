@@ -73,6 +73,13 @@ migrateLegacyConfigDir()
 app.setAppLogsPath()
 enableSourceMaps()
 
+// On Linux, enterprise/self-signed root CAs installed system-wide aren't honored
+// and trigger the "Untrusted server" dialog. Make Chromium also consult the system trust
+// store, aligning it with Git (expands the trust set, doesn't replace it).
+if (__LINUX__) {
+  app.commandLine.appendSwitch('use-system-ca')
+}
+
 const windows = new Map<number, AppWindow>()
 
 const launchTime = now()
