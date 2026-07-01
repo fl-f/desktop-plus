@@ -34,7 +34,11 @@ interface ICopilotInMemorySessionFsDirectory {
   readonly updatedAt: string
 }
 
-type CopilotInMemorySessionFsErrorCode = 'EEXIST' | 'EISDIR' | 'ENOENT'
+type CopilotInMemorySessionFsErrorCode =
+  | 'EEXIST'
+  | 'EISDIR'
+  | 'EINVAL'
+  | 'ENOENT'
 
 function createCopilotInMemorySessionFsError(
   path: string,
@@ -278,6 +282,10 @@ export function createCopilotInMemorySessionFsProvider(): SessionFsProvider {
 
       if (normalizedSrc === normalizedDest) {
         return
+      }
+
+      if (normalizedDest.startsWith(`${normalizedSrc}/`)) {
+        throw createCopilotInMemorySessionFsError(normalizedDest, 'EINVAL')
       }
 
       if (files.has(normalizedDest) || directories.has(normalizedDest)) {

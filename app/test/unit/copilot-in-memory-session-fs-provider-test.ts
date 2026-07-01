@@ -259,6 +259,29 @@ describe('createCopilotInMemorySessionFsProvider', () => {
     )
   })
 
+  it('does not rename directories into their own subtree', async () => {
+    const provider = createCopilotInMemorySessionFsProvider()
+
+    await provider.writeFile('state/workspace/context.json', '{}')
+
+    await assert.rejects(
+      () => provider.rename('state/workspace', 'state/workspace/nested'),
+      {
+        message: 'EINVAL: state/workspace/nested',
+        code: 'EINVAL',
+      }
+    )
+
+    assert.strictEqual(
+      await provider.readFile('state/workspace/context.json'),
+      '{}'
+    )
+    assert.strictEqual(
+      await provider.exists('state/workspace/nested/context.json'),
+      false
+    )
+  })
+
   it('treats renaming a path to itself as a no-op', async () => {
     const provider = createCopilotInMemorySessionFsProvider()
 
