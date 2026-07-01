@@ -8,9 +8,10 @@ import * as path from 'path'
  * combined hash. In practice, renderer.js and main.js are by far the most
  * likely targets for user modification (e.g., translating UI strings).
  *
- * Not included: native modules (.node files), node_modules dependencies, and
- * static assets (images, fonts) -- these are rarely modified by users and
- * changes to them are unlikely to produce JavaScript error reports.
+ * Not included: CSS files (renderer.css, crash.css in production builds),
+ * native modules (.node), node_modules, and static assets (SVGs, emoji).
+ * While corrupted native modules could produce JS errors, these files are not
+ * typical targets for intentional user modification.
  */
 const bundleFiles = [
   'main.js',
@@ -36,4 +37,3 @@ export async function computeBundleHash(bundleDir: string): Promise<string> {
   )
   return createHash('sha256').update(hashes.join('')).digest('hex')
 }
-
