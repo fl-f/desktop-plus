@@ -15,6 +15,17 @@ describe('getCopilotInMemorySessionFsConfig', () => {
     })
   })
 
+  it('normalizes Windows repository paths for POSIX session filesystem conventions', () => {
+    assert.deepStrictEqual(
+      getCopilotInMemorySessionFsConfig('C:\\repo\\project'),
+      {
+        initialCwd: '/c/repo/project',
+        sessionStatePath: 'state',
+        conventions: 'posix',
+      }
+    )
+  })
+
   it('falls back to process cwd when no repository path is provided', () => {
     assert.deepStrictEqual(getCopilotInMemorySessionFsConfig(), {
       initialCwd: process.cwd(),

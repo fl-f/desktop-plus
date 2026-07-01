@@ -10,11 +10,27 @@ type CopilotInMemorySessionFsReaddirWithTypesEntry = Awaited<
   ReturnType<SessionFsProvider['readdirWithTypes']>
 >[number]
 
+function normalizeCopilotInMemorySessionFsInitialCwd(path: string) {
+  const pathWithPosixSeparators = path.replace(/\\/g, '/')
+  const windowsDrivePath = /^([A-Za-z]):(?:\/(.*))?$/.exec(
+    pathWithPosixSeparators
+  )
+
+  if (windowsDrivePath === null) {
+    return pathWithPosixSeparators
+  }
+
+  const [, driveLetter, pathWithoutDrive = ''] = windowsDrivePath
+  return posix.join('/', driveLetter.toLowerCase(), pathWithoutDrive)
+}
+
 export function getCopilotInMemorySessionFsConfig(
   repositoryPath?: string
 ): SessionFsConfig {
   return {
-    initialCwd: repositoryPath ?? process.cwd(),
+    initialCwd: normalizeCopilotInMemorySessionFsInitialCwd(
+      repositoryPath ?? process.cwd()
+    ),
     sessionStatePath: InMemorySessionFsStatePath,
     // The runtime uses this only to construct virtual SessionFs paths before
     // sending them to the provider, so POSIX keeps the in-memory implementation
