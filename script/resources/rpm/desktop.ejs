@@ -6,5 +6,6 @@ Exec=<%= name %> %U<% if (execArguments && execArguments.length) { %> <%= execAr
 Icon=gh-desktop-plus
 Type=Application
 StartupNotify=true
+StartupWMClass=desktop-plus
 Categories=<%= categories.join(';') %>;
 <% if (mimeType.length) { %>MimeType=<%= mimeType.join(';') %>;<% } %>
