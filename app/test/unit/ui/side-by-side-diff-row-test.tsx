@@ -115,7 +115,7 @@ function renderSideBySideDiffRow(
     isDiffSelectable: true,
     showSideBySideDiff: false,
     hideWhitespaceInDiff: false,
-    lineNumberWidth: 3,
+    lineNumberWidth: '3ch',
     numRow: 0,
     onStartSelection: (row, column, select) => {
       startedSelections.push({ row, column, select })
