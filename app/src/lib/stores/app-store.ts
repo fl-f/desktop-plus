@@ -8897,6 +8897,12 @@ export class AppStore extends TypedBaseStore<IAppState> {
     return this.signInStore.beginBitbucketSignIn(resultCallback)
   }
 
+  public _beginCodebergSignIn(
+    resultCallback?: (result: SignInResult) => void
+  ) {
+    return this.signInStore.beginCodebergSignIn(resultCallback)
+  }
+
   public _beginGitLabSignIn(resultCallback?: (result: SignInResult) => void) {
     return this.signInStore.beginGitLabSignIn(resultCallback)
   }
@@ -9444,6 +9450,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
     const SHOW_PR_URL = {
       github: `${baseRepoUrl}/pull/${pr.pullRequestNumber}`,
       bitbucket: `${baseRepoUrl}/pull-requests/${pr.pullRequestNumber}`,
+      codeberg: `${baseRepoUrl}/pulls/${pr.pullRequestNumber}`,
       gitlab: `${baseRepoUrl}/merge_requests/${pr.pullRequestNumber}`,
     }
 
@@ -9553,6 +9560,8 @@ export class AppStore extends TypedBaseStore<IAppState> {
     const PR_URLS = {
       bitbucket:
         `${htmlURL}/pull-requests/new?${param('source', encodedCompareBranch)}&${param('dest', encodedBaseBranch)}`,
+      codeberg:
+        `${htmlURL}/compare/${encodedBaseBranch ? encodedBaseBranch + '...' : ''}${encodedCompareBranch}`,
       github:
         `${htmlURL}/pull/new/${encodedBaseBranch ? encodedBaseBranch + '...' : ''}${encodedCompareBranch}`,
       gitlab:

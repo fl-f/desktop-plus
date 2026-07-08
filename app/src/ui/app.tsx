@@ -753,6 +753,10 @@ export class App extends React.Component<IAppProps, IAppState> {
         tree: `${htmlURL}/src/${urlEncodedBranchName}`,
         compare: `${htmlURL}/branches/compare/${urlEncodedBranchName}..`,
       },
+      codeberg: {
+        tree: `${htmlURL}/src/branch/${urlEncodedBranchName}`,
+        compare: `${htmlURL}/compare/${baseBranch}...${urlEncodedBranchName}`,
+      },
       gitlab: {
         tree: `${htmlURL}/tree/${urlEncodedBranchName}`,
         compare: `${htmlURL}/compare/${baseBranch}...${urlEncodedBranchName}`,

@@ -10,6 +10,8 @@ const devClientIdGitLab =
   'a6b3b9c8fb8a782d3a0284ac80378912e44272c4a41465b5b9f5a14a79d5526a'
 const devClientSecretGitLab =
   'gloas-f3ace006b2563128e25b407fb4eef3583ca2220fc3392ca5311f3cc62076df9c'
+const devClientIdCodeberg = ''
+const devClientSecretCodeberg = ''
 
 const channel = getChannel()
 
@@ -38,6 +40,13 @@ export function getReplacements() {
     ),
     __OAUTH_SECRET_GITLAB__: s(
       process.env.DESKTOP_OAUTH_CLIENT_SECRET_GITLAB || devClientSecretGitLab
+    ),
+    __OAUTH_CLIENT_ID_CODEBERG__: s(
+      process.env.DESKTOP_OAUTH_CLIENT_ID_CODEBERG || devClientIdCodeberg
+    ),
+    __OAUTH_SECRET_CODEBERG__: s(
+      process.env.DESKTOP_OAUTH_CLIENT_SECRET_CODEBERG ||
+        devClientSecretCodeberg
     ),
     __DARWIN__: process.platform === 'darwin',
     __WIN32__: process.platform === 'win32',

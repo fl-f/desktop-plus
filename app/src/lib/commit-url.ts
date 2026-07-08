@@ -20,6 +20,8 @@ export function createCommitURL(
         return `${baseURL}/commit/${SHA}`
       case 'bitbucket':
         return `${baseURL}/commits/${SHA}`
+      case 'codeberg':
+        return `${baseURL}/commit/${SHA}`
       case 'gitlab':
         return `${baseURL}/-/commit/${SHA}`
       default:
@@ -36,6 +38,8 @@ export function createCommitURL(
       return `${baseURL}/commit/${SHA}#diff-${fileHash}`
     case 'bitbucket':
       return `${baseURL}/commits/${SHA}#chg-${filePath}`
+    case 'codeberg':
+      return `${baseURL}/commit/${SHA}#diff-${fileHash}`
     case 'gitlab':
       return `${baseURL}/-/commit/${SHA}#diff-${fileHash}`
     default:

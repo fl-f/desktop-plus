@@ -1,4 +1,7 @@
 import { Disposable } from 'event-kit'
+import { createHash, randomBytes } from 'crypto'
+import { createServer, IncomingMessage, Server, ServerResponse } from 'http'
+import { AddressInfo } from 'net'
 import { Account, UnknownLogin } from '../../models/account'
 import { assertNever, fatalError } from '../fatal-error'
 import {
@@ -16,9 +19,12 @@ import {
   getBitbucketAPIEndpoint,
   getBitbucketOAuthAuthorizationURL,
   requestOAuthTokenBitbucket,
+  getCodebergAPIEndpoint,
+  getCodebergOAuthAuthorizationURL,
   getGitLabAPIEndpoint,
   getGitLabOAuthAuthorizationURL,
   getGitLabOAuthRedirectUri,
+  requestOAuthTokenCodeberg,
   requestOAuthTokenGitLab,
 } from '../../lib/api'
 
@@ -134,6 +140,8 @@ export interface IAuthenticationState extends ISignInState {
     state: string
     endpoint: string
     oauthProvider: OAuthProvider
+    redirectUri?: string
+    codeVerifier?: string
     onAuthCompleted: (account: Account) => void
     onAuthError: (error: Error) => void
   }
@@ -165,9 +173,12 @@ export type SignInResult =
  * to GitHub.com, or a GitHub Enterprise instance.
  */
 export class SignInStore extends TypedBaseStore<SignInState | null> {
+  private static readonly codebergOAuthCallbackPath = '/oauth/codeberg/callback'
+
   private state: SignInState | null = null
 
   private accounts: ReadonlyArray<Account> = []
+  private codebergOAuthServer: Server | null = null
 
   public constructor(private readonly accountStore: AccountsStore) {
     super()
@@ -224,6 +235,7 @@ export class SignInStore extends TypedBaseStore<SignInState | null> {
     const currentState = this.state
     this.state?.resultCallback({ kind: 'cancelled' })
     this.setState(null)
+    void this.cleanupCodebergOAuthServer()
 
     if (currentState?.kind === SignInStep.Authentication) {
       currentState.oauthState?.onAuthError(new Error('cancelled'))
@@ -281,10 +293,28 @@ export class SignInStore extends TypedBaseStore<SignInState | null> {
 
     const csrfToken = crypto.randomUUID()
 
-    new Promise<Account>((resolve, reject) => {
-      const { endpoint, resultCallback } = currentState
+    const { endpoint, resultCallback } = currentState
+    const oauthProvider = this.getOAuthProvider(endpoint)
+
+    let resolveAccount!: (account: Account) => void
+    let rejectAccount!: (error: Error) => void
+    const authenticationPromise = new Promise<Account>((resolve, reject) => {
+      resolveAccount = resolve
+      rejectAccount = reject
+    })
+
+    let redirectUri: string | undefined
+    let codeVerifier: string | undefined
+    try {
       log.info('[SignInStore] initializing OAuth flow')
-      const oauthProvider = this.getOAuthProvider(endpoint)
+
+      if (oauthProvider === 'codeberg') {
+        redirectUri = await this.startCodebergOAuthServer()
+        codeVerifier = this.createCodeVerifier()
+      } else if (oauthProvider === 'gitlab') {
+        redirectUri = getGitLabOAuthRedirectUri()
+      }
+
       this.setState({
         kind: SignInStep.Authentication,
         endpoint,
@@ -295,50 +325,67 @@ export class SignInStore extends TypedBaseStore<SignInState | null> {
           oauthProvider,
           state: csrfToken,
           endpoint,
-          onAuthCompleted: resolve,
-          onAuthError: reject,
+          redirectUri,
+          codeVerifier,
+          onAuthCompleted: resolveAccount,
+          onAuthError: rejectAccount,
         },
       })
-      if (oauthProvider === 'bitbucket') {
-        shell.openExternal(getBitbucketOAuthAuthorizationURL())
-      } else if (oauthProvider === 'gitlab') {
-        const redirectUri = getGitLabOAuthRedirectUri()
-        shell.openExternal(getGitLabOAuthAuthorizationURL(redirectUri))
-      } else {
-        shell.openExternal(getOAuthAuthorizationURL(endpoint, csrfToken))
-      }
-    })
-      .then(account => {
-        if (!this.state || this.state.kind !== SignInStep.Authentication) {
-          // Looks like the sign in flow has been aborted
-          log.warn('[SignInStore] account resolved but session has changed')
-          return
-        }
 
-        log.info('[SignInStore] account resolved')
-        this.emitAuthenticate(account)
-        this.setState({
-          kind: SignInStep.Success,
-          resultCallback: this.state.resultCallback,
-        })
+      const authorizationUrl =
+        oauthProvider === 'bitbucket'
+          ? getBitbucketOAuthAuthorizationURL()
+          : oauthProvider === 'codeberg'
+            ? getCodebergOAuthAuthorizationURL(
+                redirectUri!,
+                csrfToken,
+                this.createCodeChallenge(codeVerifier!)
+              )
+            : oauthProvider === 'gitlab'
+              ? getGitLabOAuthAuthorizationURL(redirectUri!)
+              : getOAuthAuthorizationURL(endpoint, csrfToken)
+
+      const opened = await shell.openExternal(authorizationUrl)
+      if (!opened) {
+        throw new Error('Failed to open system browser for authentication')
+      }
+
+      const account = await authenticationPromise
+
+      if (!this.state || this.state.kind !== SignInStep.Authentication) {
+        log.warn('[SignInStore] account resolved but session has changed')
+        return
+      }
+
+      log.info('[SignInStore] account resolved')
+      this.emitAuthenticate(account)
+      this.setState({
+        kind: SignInStep.Success,
+        resultCallback: this.state.resultCallback,
       })
-      .catch(e => {
-        // Make sure we're still in the same sign in session
-        if (
-          this.state?.kind === SignInStep.Authentication &&
-          this.state.oauthState?.state === csrfToken
-        ) {
-          log.info('[SignInStore] error with OAuth flow', e)
-          this.setState({ ...this.state, error: e, loading: false })
-        } else {
-          log.info(`[SignInStore] OAuth error but session has changed: ${e}`)
-        }
-      })
+    } catch (e) {
+      const error = e instanceof Error ? e : new Error(String(e))
+
+      if (
+        this.state?.kind === SignInStep.Authentication &&
+        this.state.oauthState?.state === csrfToken
+      ) {
+        log.info('[SignInStore] error with OAuth flow', error)
+        this.setState({ ...this.state, error, loading: false })
+      } else {
+        log.info(`[SignInStore] OAuth error but session has changed: ${error}`)
+      }
+
+      await this.cleanupCodebergOAuthServer()
+      rejectAccount(error)
+    }
   }
 
   private getOAuthProvider(endpoint: string): OAuthProvider {
     if (endpoint === getBitbucketAPIEndpoint()) {
       return 'bitbucket'
+    } else if (endpoint === getCodebergAPIEndpoint()) {
+      return 'codeberg'
     } else if (endpoint === getGitLabAPIEndpoint()) {
       return 'gitlab'
     } else {
@@ -356,7 +403,7 @@ export class SignInStore extends TypedBaseStore<SignInState | null> {
     }
 
     if (
-      this.state.oauthState.oauthProvider === 'github' &&
+      this.oauthProviderUsesState(this.state.oauthState.oauthProvider) &&
       this.state.oauthState.state !== action.state
     ) {
       log.warn(
@@ -399,6 +446,16 @@ export class SignInStore extends TypedBaseStore<SignInState | null> {
         return await requestOAuthToken(endpoint, code)
       case 'bitbucket':
         return await requestOAuthTokenBitbucket(code)
+      case 'codeberg':
+        return await requestOAuthTokenCodeberg(
+          code,
+          this.state?.kind === SignInStep.Authentication
+            ? this.state.oauthState?.redirectUri ?? ''
+            : '',
+          this.state?.kind === SignInStep.Authentication
+            ? this.state.oauthState?.codeVerifier
+            : undefined
+        )
       case 'gitlab':
         return await requestOAuthTokenGitLab(code, getGitLabOAuthRedirectUri())
       default:
@@ -432,6 +489,21 @@ export class SignInStore extends TypedBaseStore<SignInState | null> {
     }
 
     const endpoint = getBitbucketAPIEndpoint()
+    this.setState({
+      kind: SignInStep.Authentication,
+      endpoint,
+      error: null,
+      loading: false,
+      resultCallback: resultCallback ?? noop,
+    })
+  }
+
+  public beginCodebergSignIn(resultCallback?: (result: SignInResult) => void) {
+    if (this.state !== null) {
+      this.reset()
+    }
+
+    const endpoint = getCodebergAPIEndpoint()
     this.setState({
       kind: SignInStep.Authentication,
       endpoint,
@@ -520,6 +592,120 @@ export class SignInStore extends TypedBaseStore<SignInState | null> {
       error: null,
       loading: false,
       resultCallback: currentState.resultCallback,
+    })
+  }
+
+  private oauthProviderUsesState(oauthProvider: OAuthProvider) {
+    return oauthProvider === 'github' || oauthProvider === 'codeberg'
+  }
+
+  private createCodeVerifier() {
+    return randomBytes(64).toString('base64url')
+  }
+
+  private createCodeChallenge(codeVerifier: string) {
+    return createHash('sha256').update(codeVerifier).digest('base64url')
+  }
+
+  private async startCodebergOAuthServer(): Promise<string> {
+    await this.cleanupCodebergOAuthServer()
+
+    const server = createServer((request, response) => {
+      void this.onCodebergOAuthRequest(request, response)
+    })
+    this.codebergOAuthServer = server
+    server.unref()
+
+    await new Promise<void>((resolve, reject) => {
+      server.once('error', reject)
+      server.listen(0, '127.0.0.1', () => {
+        server.removeListener('error', reject)
+        resolve()
+      })
+    })
+
+    const address = server.address() as AddressInfo | null
+    if (address === null) {
+      await this.cleanupCodebergOAuthServer()
+      throw new Error('Codeberg OAuth callback server did not start')
+    }
+
+    return `http://127.0.0.1:${address.port}${SignInStore.codebergOAuthCallbackPath}`
+  }
+
+  private async onCodebergOAuthRequest(
+    request: IncomingMessage,
+    response: ServerResponse
+  ) {
+    const requestUrl = request.url
+    if (requestUrl === undefined) {
+      this.respondToCodebergOAuthRequest(response, 400, 'Missing callback URL.')
+      return
+    }
+
+    const url = new URL(requestUrl, 'http://127.0.0.1')
+    if (url.pathname !== SignInStore.codebergOAuthCallbackPath) {
+      this.respondToCodebergOAuthRequest(response, 404, 'Not found.')
+      return
+    }
+
+    const code = url.searchParams.get('code')
+    const state = url.searchParams.get('state') ?? ''
+    const error = url.searchParams.get('error')
+    const errorDescription = url.searchParams.get('error_description')
+    if (error !== null) {
+      const message =
+        errorDescription !== null ? `${error}: ${errorDescription}` : error
+      this.respondToCodebergOAuthRequest(response, 400, message)
+      await this.cleanupCodebergOAuthServer()
+
+      const signInState = this.state
+      if (signInState?.kind === SignInStep.Authentication) {
+        signInState.oauthState?.onAuthError(new Error(message))
+      }
+      return
+    }
+
+    if (code === null) {
+      this.respondToCodebergOAuthRequest(
+        response,
+        400,
+        'Authentication callback did not include an authorization code.'
+      )
+      return
+    }
+
+    this.respondToCodebergOAuthRequest(
+      response,
+      200,
+      'Authentication complete. You can close this window.'
+    )
+
+    await this.cleanupCodebergOAuthServer()
+    await this.resolveOAuthRequest({ name: 'oauth', code, state })
+  }
+
+  private respondToCodebergOAuthRequest(
+    response: ServerResponse,
+    statusCode: number,
+    message: string
+  ) {
+    response.writeHead(statusCode, { 'Content-Type': 'text/html; charset=utf-8' })
+    response.end(
+      `<!doctype html><html><body><p>${message}</p></body></html>`
+    )
+  }
+
+  private async cleanupCodebergOAuthServer() {
+    const server = this.codebergOAuthServer
+    this.codebergOAuthServer = null
+
+    if (server === null) {
+      return
+    }
+
+    await new Promise<void>(resolve => {
+      server.close(() => resolve())
     })
   }
 }

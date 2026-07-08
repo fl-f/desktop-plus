@@ -484,6 +484,8 @@ export class CommitMessageAvatar extends React.Component<
         return 'GitHub Enterprise account'
       case 'bitbucket':
         return 'Bitbucket account'
+      case 'codeberg':
+        return 'Codeberg account'
       case 'gitlab':
         return 'GitLab account'
       default:

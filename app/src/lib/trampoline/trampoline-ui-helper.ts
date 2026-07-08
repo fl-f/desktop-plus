@@ -100,6 +100,9 @@ class TrampolineUIHelper {
         case 'bitbucket':
           this.dispatcher.beginBitbucketSignIn(cb)
           break
+        case 'codeberg':
+          this.dispatcher.beginCodebergSignIn(cb)
+          break
         case 'gitlab':
           this.dispatcher.beginGitLabSignIn(cb)
           break

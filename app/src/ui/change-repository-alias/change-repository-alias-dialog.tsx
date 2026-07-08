@@ -81,6 +81,8 @@ export class ChangeRepositoryAlias extends React.Component<
         return ' on GitHub'
       case 'bitbucket':
         return ' on Bitbucket'
+      case 'codeberg':
+        return ' on Codeberg'
       case 'gitlab':
         return ' on GitLab'
       default:

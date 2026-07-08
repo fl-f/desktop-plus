@@ -16,6 +16,7 @@ interface IAccountsProps {
   readonly onDotComSignIn: () => void
   readonly onEnterpriseSignIn: () => void
   readonly onBitbucketSignIn: () => void
+  readonly onCodebergSignIn: () => void
   readonly onGitLabSignIn: () => void
   readonly onLogout: (account: Account) => void
 }
@@ -24,6 +25,7 @@ enum SignInType {
   DotCom,
   Enterprise,
   Bitbucket,
+  Codeberg,
   GitLab,
 }
 
@@ -39,6 +41,9 @@ export class Accounts extends React.Component<IAccountsProps, {}> {
 
         <h2>Bitbucket</h2>
         {this.renderMultipleBitbucketAccounts()}
+
+        <h2>Codeberg</h2>
+        {this.renderMultipleCodebergAccounts()}
 
         <h2>GitLab</h2>
         {this.renderMultipleGitLabAccounts()}
@@ -77,6 +82,18 @@ export class Accounts extends React.Component<IAccountsProps, {}> {
       SignInType.Bitbucket,
       'Add Bitbucket account',
       this.props.onBitbucketSignIn
+    )
+  }
+
+  private renderMultipleCodebergAccounts() {
+    const codebergAccounts = this.props.accounts.filter(
+      a => a.apiType === 'codeberg'
+    )
+    return this.renderMultipleAccounts(
+      codebergAccounts,
+      SignInType.Codeberg,
+      'Add Codeberg account',
+      this.props.onCodebergSignIn
     )
   }
 
@@ -169,6 +186,10 @@ export class Accounts extends React.Component<IAccountsProps, {}> {
     this.props.onBitbucketSignIn()
   }
 
+  private onCodebergSignIn = () => {
+    this.props.onCodebergSignIn()
+  }
+
   private onGitLabSignIn = () => {
     this.props.onGitLabSignIn()
   }
@@ -211,6 +232,17 @@ export class Accounts extends React.Component<IAccountsProps, {}> {
           >
             <div>
               Sign in to your Bitbucket account to access your repositories.
+            </div>
+          </CallToAction>
+        )
+      case SignInType.Codeberg:
+        return (
+          <CallToAction
+            actionTitle={signInTitle + ' Codeberg'}
+            onAction={this.onCodebergSignIn}
+          >
+            <div>
+              Sign in to your Codeberg account to access your repositories.
             </div>
           </CallToAction>
         )

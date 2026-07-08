@@ -301,6 +301,7 @@ export class NoChanges extends React.Component<
     const BROWSER_TARGETS: Record<RepoType | '_', [string, OcticonSymbol]> = {
       github: ['on Github', octicons.markGithub],
       bitbucket: ['on Bitbucket', bitbucket],
+      codeberg: ['on Codeberg', octicons.globe],
       gitlab: ['on GitLab', gitlab],
       _: ['in your browser', octicons.globe],
     }
@@ -638,6 +639,8 @@ export class NoChanges extends React.Component<
         return 'GitHub'
       case 'bitbucket':
         return 'Bitbucket'
+      case 'codeberg':
+        return 'Codeberg'
       case 'gitlab':
         return 'GitLab'
       case undefined:

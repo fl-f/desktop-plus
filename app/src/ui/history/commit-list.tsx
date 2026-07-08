@@ -998,6 +998,8 @@ export class CommitList extends React.Component<
           : 'View on GitHub Enterprise'
       case 'bitbucket':
         return 'View on Bitbucket'
+      case 'codeberg':
+        return 'View on Codeberg'
       case 'gitlab':
         return 'View on GitLab'
       default:

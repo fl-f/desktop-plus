@@ -60,6 +60,9 @@ export class InvalidatedToken extends React.Component<IInvalidatedTokenProps> {
       case 'bitbucket':
         dispatcher.showBitbucketSignInDialog()
         break
+      case 'codeberg':
+        dispatcher.showCodebergSignInDialog()
+        break
       case 'gitlab':
         dispatcher.showGitLabSignInDialog()
         break
