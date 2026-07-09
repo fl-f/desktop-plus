@@ -45,13 +45,16 @@ const conventionalCommitLabelsByType = new Map<string, string>(
   conventionalCommitTypeLabels.map(label => [label.toLowerCase(), label])
 )
 
+const autosquashPrefixes = '(?:(?:fixup|squash|amend)!\\s+)*'
+const mergeRevertPrefix = '(?:(?:Merge|Revert|Reapply)\\s+"?)?'
+const conventionalPrefix = '(\\w+)(?:\\((.+?)\\))?(!)?: *'
 /**
  * Matches the Conventional Commits prefix `type(scope)!: ` at the start of a
  * commit summary, capturing the type, the optional scope and the optional
  * breaking-change (`!`) marker.
  */
 const conventionalCommitPattern = RE2JS.compile(
-  '^\\s*((?:(?:fixup|squash|amend)!\\s+)*(?:(?:Merge|Revert|Reapply)\\s+"?)?)\\s*(\\w+)(?:\\((.+?)\\))?(!)?: *'
+  `^\\s*(${autosquashPrefixes}${mergeRevertPrefix})\\s*${conventionalPrefix}`
 )
 
 /** A parsed Conventional Commit prefix. */
