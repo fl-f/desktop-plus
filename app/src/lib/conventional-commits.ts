@@ -51,7 +51,7 @@ const conventionalCommitLabelsByType = new Map<string, string>(
  * breaking-change (`!`) marker.
  */
 const conventionalCommitPattern = RE2JS.compile(
-  '^(\\s*(?:Merge|Revert|Reapply)\\s+"?)?\\s*(\\w+)(?:\\((.+?)\\))?(!)?: *'
+  '^\\s*((?:(?:fixup|squash|amend)!\\s+)*(?:(?:Merge|Revert|Reapply)\\s+"?)?)\\s*(\\w+)(?:\\((.+?)\\))?(!)?: *'
 )
 
 /** A parsed Conventional Commit prefix. */
@@ -65,7 +65,7 @@ export interface IConventionalCommit {
   /** The optional scope (the text inside the parentheses), or null. */
   readonly scope: string | null
 
-  /** Plain text rendered before the badge: `Merge`/`Revert`/`Reapply` */
+  /** Plain text rendered before the badge: `Merge`/`Revert`..., autosquash prefixes, etc. */
   readonly leftSideText: string
 
   /** The remainder of the summary rendered after the badge, with the prefix stripped. */
