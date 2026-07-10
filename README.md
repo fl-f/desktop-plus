@@ -261,10 +261,10 @@ You can also build from source by installing `desktop-plus` or `desktop-plus-git
 <summary>Click to expand</summary>
 <br>
 
-Simply install Desktop Plus from [Flathub](https://flathub.org/en/apps/io.github.pol_rivero.github-desktop-plus):
+Simply install Desktop Plus from [Flathub](https://flathub.org/en/apps/org.desktop_plus.desktop-plus):
 
 ```bash
-flatpak install flathub io.github.pol_rivero.github-desktop-plus
+flatpak install flathub org.desktop_plus.desktop-plus
 ```
 
 > **NOTE:** Git hooks will run inside the Flatpak sandbox and cannot access programs installed on your system (such as version managers,
