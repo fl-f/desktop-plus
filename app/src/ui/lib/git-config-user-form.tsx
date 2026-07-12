@@ -182,10 +182,10 @@ export class GitConfigUserForm extends React.Component<
           return '(GitHub Enterprise)'
         case 'bitbucket':
           return '(Bitbucket)'
-        case 'codeberg':
-          return '(Codeberg)'
         case 'gitlab':
           return '(GitLab)'
+        case 'codeberg':
+          return '(Codeberg)'
         default:
           assertNever(account.apiType, 'Unknown account apiType')
       }

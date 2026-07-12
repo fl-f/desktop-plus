@@ -210,10 +210,10 @@ function getViewOnBrowserLabel(repoType: RepoType | null) {
       return 'View on GitHub'
     case 'bitbucket':
       return 'View on Bitbucket'
-    case 'codeberg':
-      return 'View on Codeberg'
     case 'gitlab':
       return 'View on GitLab'
+    case 'codeberg':
+      return 'View on Codeberg'
     default:
       return 'View in your browser'
   }

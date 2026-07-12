@@ -188,10 +188,10 @@ export class PullRequestQuickView extends React.Component<
         return 'View on GitHub'
       case 'bitbucket':
         return 'View on Bitbucket'
-      case 'codeberg':
-        return 'View on Codeberg'
       case 'gitlab':
         return 'View on GitLab'
+      case 'codeberg':
+        return 'View on Codeberg'
       default:
         assertNever(repoType, `Unknown repo type: ${repoType}`)
     }

@@ -532,14 +532,14 @@ export class Preferences extends React.Component<
     this.props.dispatcher.showBitbucketSignInDialog()
   }
 
-  private onCodebergSignIn = () => {
-    this.props.onDismissed()
-    this.props.dispatcher.showCodebergSignInDialog()
-  }
-
   private onGitLabSignIn = () => {
     this.props.onDismissed()
     this.props.dispatcher.showGitLabSignInDialog()
+  }
+
+  private onCodebergSignIn = () => {
+    this.props.onDismissed()
+    this.props.dispatcher.showCodebergSignInDialog()
   }
 
   private onCopilotSignIn = () => {
@@ -601,8 +601,8 @@ export class Preferences extends React.Component<
             onDotComSignIn={this.onDotComSignIn}
             onEnterpriseSignIn={this.onEnterpriseSignIn}
             onBitbucketSignIn={this.onBitbucketSignIn}
-            onCodebergSignIn={this.onCodebergSignIn}
             onGitLabSignIn={this.onGitLabSignIn}
+            onCodebergSignIn={this.onCodebergSignIn}
             onLogout={this.onLogout}
           />
         )

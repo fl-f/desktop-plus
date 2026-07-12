@@ -8916,14 +8916,12 @@ export class AppStore extends TypedBaseStore<IAppState> {
     return this.signInStore.beginBitbucketSignIn(resultCallback)
   }
 
-  public _beginCodebergSignIn(
-    resultCallback?: (result: SignInResult) => void
-  ) {
-    return this.signInStore.beginCodebergSignIn(resultCallback)
-  }
-
   public _beginGitLabSignIn(resultCallback?: (result: SignInResult) => void) {
     return this.signInStore.beginGitLabSignIn(resultCallback)
+  }
+
+  public _beginCodebergSignIn(resultCallback?: (result: SignInResult) => void) {
+    return this.signInStore.beginCodebergSignIn(resultCallback)
   }
 
   public _setSignInEndpoint(url: string): Promise<void> {
@@ -9469,8 +9467,8 @@ export class AppStore extends TypedBaseStore<IAppState> {
     const SHOW_PR_URL = {
       github: `${baseRepoUrl}/pull/${pr.pullRequestNumber}`,
       bitbucket: `${baseRepoUrl}/pull-requests/${pr.pullRequestNumber}`,
-      codeberg: `${baseRepoUrl}/pulls/${pr.pullRequestNumber}`,
       gitlab: `${baseRepoUrl}/merge_requests/${pr.pullRequestNumber}`,
+      codeberg: `${baseRepoUrl}/pulls/${pr.pullRequestNumber}`,
     }
 
     const type = pr.base.gitHubRepository.type

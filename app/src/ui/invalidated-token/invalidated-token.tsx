@@ -60,11 +60,11 @@ export class InvalidatedToken extends React.Component<IInvalidatedTokenProps> {
       case 'bitbucket':
         dispatcher.showBitbucketSignInDialog()
         break
-      case 'codeberg':
-        dispatcher.showCodebergSignInDialog()
-        break
       case 'gitlab':
         dispatcher.showGitLabSignInDialog()
+        break
+      case 'codeberg':
+        dispatcher.showCodebergSignInDialog()
         break
       default:
         console.error('Unknown sign-in dialog for account:', account)

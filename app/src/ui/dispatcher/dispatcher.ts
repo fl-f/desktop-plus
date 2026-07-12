@@ -1915,12 +1915,12 @@ export class Dispatcher {
     this.appStore._beginBitbucketSignIn(resultCallback)
   }
 
-  public beginCodebergSignIn(resultCallback: (result: SignInResult) => void) {
-    this.appStore._beginCodebergSignIn(resultCallback)
-  }
-
   public beginGitLabSignIn(resultCallback: (result: SignInResult) => void) {
     this.appStore._beginGitLabSignIn(resultCallback)
+  }
+
+  public beginCodebergSignIn(resultCallback: (result: SignInResult) => void) {
+    this.appStore._beginCodebergSignIn(resultCallback)
   }
 
   public beginBrowserBasedSignIn(
@@ -2013,17 +2013,17 @@ export class Dispatcher {
     this.appStore._showPopup({ type: PopupType.SignIn })
   }
 
-  public async showCodebergSignInDialog(
-    resultCallback?: (result: SignInResult) => void
-  ): Promise<void> {
-    this.appStore._beginCodebergSignIn(resultCallback)
-    this.appStore._showPopup({ type: PopupType.SignIn })
-  }
-
   public async showGitLabSignInDialog(
     resultCallback?: (result: SignInResult) => void
   ): Promise<void> {
     this.appStore._beginGitLabSignIn(resultCallback)
+    this.appStore._showPopup({ type: PopupType.SignIn })
+  }
+
+  public async showCodebergSignInDialog(
+    resultCallback?: (result: SignInResult) => void
+  ): Promise<void> {
+    this.appStore._beginCodebergSignIn(resultCallback)
     this.appStore._showPopup({ type: PopupType.SignIn })
   }
 

@@ -113,10 +113,10 @@ function getViewBranchLabel(repoType: RepoType): string {
       return `View ${branch} on GitHub`
     case 'bitbucket':
       return `View ${branch} on Bitbucket`
-    case 'codeberg':
-      return `View ${branch} on Codeberg`
     case 'gitlab':
       return `View ${branch} on GitLab`
+    case 'codeberg':
+      return `View ${branch} on Codeberg`
     default:
       return assertNever(repoType, `Unknown repo type: ${repoType}`)
   }
@@ -128,10 +128,10 @@ function getViewPullRequestLabel(repoType: RepoType): string {
       return 'View Pull Request on GitHub'
     case 'bitbucket':
       return 'View Pull Request on Bitbucket'
-    case 'codeberg':
-      return 'View Pull Request on Codeberg'
     case 'gitlab':
       return 'View Merge Request on GitLab'
+    case 'codeberg':
+      return 'View Pull Request on Codeberg'
     default:
       return assertNever(repoType, `Unknown repo type: ${repoType}`)
   }
