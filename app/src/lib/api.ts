@@ -145,10 +145,10 @@ const ClientIDGitLab = process.env.TEST_ENV ? '' : __OAUTH_CLIENT_ID_GITLAB__
 const ClientSecretGitLab = process.env.TEST_ENV ? '' : __OAUTH_SECRET_GITLAB__
 const ClientIDCodeberg = process.env.TEST_ENV
   ? ''
-  : (__OAUTH_CLIENT_ID_CODEBERG__ ?? '')
+  : __OAUTH_CLIENT_ID_CODEBERG__
 const ClientSecretCodeberg = process.env.TEST_ENV
   ? ''
-  : (__OAUTH_SECRET_CODEBERG__ ?? '')
+  : __OAUTH_SECRET_CODEBERG__
 
 if (!ClientID || !ClientID.length || !ClientSecret || !ClientSecret.length) {
   log.warn(
@@ -175,9 +175,14 @@ if (
     `DESKTOP_OAUTH_CLIENT_ID_GITLAB and/or DESKTOP_OAUTH_CLIENT_SECRET_GITLAB is undefined. You won't be able to authenticate new GitLab users.`
   )
 }
-if (!ClientIDCodeberg || !ClientIDCodeberg.length) {
+if (
+  !ClientIDCodeberg ||
+  !ClientIDCodeberg.length ||
+  !ClientSecretCodeberg ||
+  !ClientSecretCodeberg.length
+) {
   log.warn(
-    `DESKTOP_OAUTH_CLIENT_ID_CODEBERG is undefined. You won't be able to authenticate new Codeberg users.`
+    `DESKTOP_OAUTH_CLIENT_ID_CODEBERG and/or DESKTOP_OAUTH_CLIENT_SECRET_CODEBERG is undefined. You won't be able to authenticate new Codeberg users.`
   )
 }
 
