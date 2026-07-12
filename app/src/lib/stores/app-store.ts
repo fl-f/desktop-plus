@@ -9543,14 +9543,28 @@ export class AppStore extends TypedBaseStore<IAppState> {
     compareBranch: Branch,
     baseBranch?: Branch
   ): Promise<void> {
-    const gitHubRepository = repository.gitHubRepository
-    if (!gitHubRepository) {
+    if (!isRepositoryWithGitHubRepository(repository)) {
       return
     }
+    const url = this._getPullRequestCreationURL(
+      repository,
+      compareBranch,
+      baseBranch
+    )
+    await this._openInBrowser(url)
+  }
 
+  public _getPullRequestCreationURL(
+    repository: RepositoryWithGitHubRepository,
+    compareBranch: Branch,
+    baseBranch?: Branch
+  ): string {
+    const gitHubRepository = repository.gitHubRepository
     const { parent, owner, name, htmlURL, type } = gitHubRepository
     const isForkContributingToParent =
       isForkedRepositoryContributingToParent(repository)
+    const parentUrl =
+      (isForkContributingToParent ? parent?.htmlURL : null) ?? htmlURL
 
     const baseForkPreface =
       isForkContributingToParent && parent !== null
@@ -9560,33 +9574,49 @@ export class AppStore extends TypedBaseStore<IAppState> {
       baseBranch !== undefined
         ? baseForkPreface + encodeURIComponent(baseBranch.nameWithoutRemote)
         : ''
+    const encodedBaseWithoutPreface =
+      baseBranch !== undefined
+        ? encodeURIComponent(baseBranch.nameWithoutRemote)
+        : ''
 
     const compareForkPreface = isForkContributingToParent
       ? `${owner.login}:${name}:`
       : ''
 
+    const encodedCompareWithoutPreface = encodeURIComponent(
+      compareBranch.upstreamWithoutRemote ?? compareBranch.nameWithoutRemote
+    )
     const encodedCompareBranch =
-      compareForkPreface +
-      encodeURIComponent(
-        compareBranch.upstreamWithoutRemote ?? compareBranch.nameWithoutRemote
-      )
+      compareForkPreface + encodedCompareWithoutPreface
 
     const param = (name: string, value: string): string => {
       return value ? encodeURIComponent(name) + '=' + value : ''
     }
 
+    const codebergHead =
+      (isForkContributingToParent ? `${owner.login}/${name}:` : '') +
+      encodedCompareWithoutPreface
+
+    // Bitbucket's dest param accepts a workspace/repo_slug::branch value to
+    // target the parent repository. An empty branch after :: preselects the
+    // parent's default branch.
+    const bitbucketDest =
+      (isForkContributingToParent && parent !== null
+        ? `${parent.owner.login}/${parent.name}::`
+        : '') + encodedBaseWithoutPreface
+
     // prettier-ignore
     const PR_URLS = {
-      bitbucket:
-        `${htmlURL}/pull-requests/new?${param('source', encodedCompareBranch)}&${param('dest', encodedBaseBranch)}`,
-      codeberg:
-        `${htmlURL}/compare/${encodedBaseBranch ? encodedBaseBranch + '...' : ''}${encodedCompareBranch}`,
       github:
         `${htmlURL}/pull/new/${encodedBaseBranch ? encodedBaseBranch + '...' : ''}${encodedCompareBranch}`,
+      bitbucket:
+        `${htmlURL}/pull-requests/new?${param('source', encodedCompareWithoutPreface)}&${param('dest', bitbucketDest)}`,
       gitlab:
-        `${htmlURL}/merge_requests/new?${param('merge_request[source_branch]', encodedCompareBranch)}&${param('merge_request[target_branch]', encodedBaseBranch)}`,
+        `${htmlURL}/-/merge_requests/new?${param('merge_request[source_branch]', encodedCompareWithoutPreface)}&${param('merge_request[target_branch]', encodedBaseWithoutPreface)}`,
+      codeberg:
+        `${parentUrl}/compare/${encodedBaseWithoutPreface ? encodedBaseWithoutPreface + '...' : ''}${codebergHead}`,
     }
-    await this._openInBrowser(PR_URLS[type])
+    return PR_URLS[type]
   }
 
   public async _updateExistingUpstreamRemote(
